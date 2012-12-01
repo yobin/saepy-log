@@ -5,11 +5,11 @@
 <head>
   <meta charset="utf-8">
   <title>#{title}</title>
-  <meta name="author" content="#{{ADMIN_NAME}}" />
+  <meta name="author" content="#{{getAttr('ADMIN_NAME')}}" />
   <meta name="HandheldFriendly" content="True" />
   <meta name="MobileOptimized" content="320" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="alternate" type="application/rss+xml" title="#{SITE_TITLE} RSS Feed" href="#{{BASE_URL}}/feed" />
+  <link rel="alternate" type="application/rss+xml" title="#{getAttr('SITE_TITLE')} RSS Feed" href="#{{BASE_URL}}/feed" />
   <link rel="shortcut icon" href="#{{BASE_URL}}/favicon.ico" type="image" />
 
   <link href="/static/themes/octopress-disqus/css/screen.css" media="screen, projection" rel="stylesheet" type="text/css" />
@@ -17,7 +17,7 @@
   <script src="#{{JQUERY}}"></script>
   <script src="/static/themes/octopress-disqus/js/main.js"></script>
   
-  <link rel='index' title='#{SITE_TITLE}' href='#{{BASE_URL}}/' />
+  <link rel='index' title='#{getAttr('SITE_TITLE')}' href='#{{BASE_URL}}/' />
 <?py if 'postdetail' in _context and postdetail: ?>
   <link rel='start' title='${obj.title}' href='#{obj.absolute_url}' /> 
 <?py     if obj.prev_obj: ?>
@@ -58,8 +58,8 @@
 <body>
   <header role="banner">
     <hgroup>
-      <h1><a href="/">#{{SITE_TITLE}}</a></h1>
-        <h2>#{{SITE_SUB_TITLE}}</h2>
+      <h1><a href="/">#{{getAttr('SITE_TITLE')}}</a></h1>
+        <h2>#{{getAttr('SITE_SUB_TITLE')}}</h2>
     </hgroup>
   </header>
   <nav role=navigation>
@@ -105,7 +105,7 @@
   </div>
   <footer>
     <p>
-    &copy; #{{COPY_YEAR}} Copyright <a href="#{{BASE_URL}}">#{{SITE_TITLE}}</a> - 
+    &copy; #{{COPY_YEAR}} Copyright <a href="#{{BASE_URL}}">#{{getAttr('SITE_TITLE')}}</a> - 
     Powered by <a href="http://saepy.sinaapp.com/" target="_blank">SAEpy-log</a> -
     Theme by <a href="http://www.octopress.org/" target="_blank">Octopress</a>, Improved by <a href="http://ebaby.sinaapp.com" target="_blank">Hxy</a> -
     Time: <span id="requesttime">#{ int(request.request_time()*1000) }</span> ms -
@@ -129,9 +129,7 @@
 <?py #endif ?>
 
 
-<?PY if ANALYTICS_CODE: ?>
-#{{ANALYTICS_CODE}}
-<?PY #endif ?>
+#{{getAttr('ANALYTICS_CODE')}}
 
 </body>
 </html>

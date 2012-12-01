@@ -1,6 +1,6 @@
             <div class="post" id="post-#{obj.id}">
             <h2><a href="#{obj.absolute_url}" rel="bookmark" title="Permanent Link to #{obj.title}">#{obj.title}</a> </h2>
-            <div class="postmetadata-top"><small>By #{{ADMIN_NAME}} at #{obj.add_time_fn} in <a href="#{{BASE_URL}}/category/#{obj.category}/" rel="category tag">#{obj.category}</a> ( <a href="#{obj.absolute_url}#comments" title="Comment on #{obj.title}">#{obj.comment_num} Comments</a> )</small></div>
+            <div class="postmetadata-top"><small>By #{{getAttr('ADMIN_NAME')}} at #{obj.add_time_fn} in <a href="#{{BASE_URL}}/category/#{obj.category}/" rel="category tag">#{obj.category}</a> ( <a href="#{obj.absolute_url}#comments" title="Comment on #{obj.title}">#{obj.comment_num} Comments</a> )</small></div>
             <div id="postcondiv">
             #{obj.content}
             </div>

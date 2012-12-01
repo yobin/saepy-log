@@ -1,3 +1,10 @@
+本开源博客的代码Fork自ego008的https://github.com/ego008/saepy-log，
+我从定制修改了一下，后来还加了一些实验性的东西，这个已经满足我的要求，后来就没有改下去了。
+对了，一些配置性的东西，我从setting.py中注掉了，改在admin后台自己配置了。
+
+
+下面是SAEpy-log原来的说明。
+
 SAEpy-log 是一款运行在SAE/python上轻型的、性能卓越的blog程序
 
 示例 http://saepy.sinaapp.com

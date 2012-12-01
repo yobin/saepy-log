@@ -7,6 +7,7 @@ from urllib import unquote, quote, urlencode
 from urlparse import urljoin, urlunsplit
 
 from datetime import datetime, timedelta
+from time import time
 
 import tenjin
 from tenjin.helpers import *
@@ -15,6 +16,9 @@ from setting import *
 
 import tornado.web
 
+#KVDB 要在后台初始化
+import sae.kvdb
+kv = sae.kvdb.KVClient()
 
 #Memcache 是否可用、用户是否在后台初始化Memcache
 MC_Available = False
@@ -46,6 +50,36 @@ def slugfy(text, separator='-'):
     ret = re.sub("[\s]+", separator, ret)
     return ret
 
+CODE_RE = re.compile(r"""\[code\](.+?)\[/code\]""",re.I|re.M|re.S)
+
+def n2br(text):
+    con = text.replace('>\n\n','>').replace('>\n','>')
+    con = "<p>%s</p>"%('</p><p>'.join(con.split('\n\n')))
+    return '<br/>'.join(con.split("\n"))
+
+def tran_content(text, code = False):
+    if code:
+        codetag = '[mycodeplace]'
+        codes = CODE_RE.findall(text)
+        for i in range(len(codes)):
+            text = text.replace(codes[i],codetag)
+        text = text.replace("[code]","").replace("[/code]","")
+
+        text = n2br(text)
+
+        a = text.split(codetag)
+        b = []
+        for i in range(len(a)):
+            b.append(a[i])
+            try:
+                b.append('<pre><code>' + safe_encode(codes[i]) + '</code></pre>')
+            except:
+                pass
+
+        return ''.join(b)
+    else:
+        return n2br(text)
+
 def safe_encode(con):
     return con.replace("<","&lt;").replace(">","&gt;")
 
@@ -61,13 +95,20 @@ def quoted_string(unicode, coding='utf-8'):
 def cnnow():
     return datetime.utcnow() + timedelta(hours =+ 8)
 
+#generate the archive name
+def genArchive():
+    #return "201207"
+    return cnnow().strftime("%Y%m")
+
 # get time_from_now
 def timestamp_to_datetime(timestamp):
     return datetime.fromtimestamp(timestamp)
 
 def time_from_now(time):
+    return datetime.fromtimestamp(time).strftime("%Y-%m-%d %H:%M:%S")
     if isinstance(time, int):
         time = timestamp_to_datetime(time)
+
     #time_diff = datetime.utcnow() - time
     time_diff = cnnow() - time
     days = time_diff.days
@@ -117,7 +158,7 @@ def clear_all_cache():
             pass
     else:
         pass
-    
+
 def format_date(dt):
     return dt.strftime('%a, %d %b %Y %H:%M:%S GMT')
 
@@ -127,13 +168,13 @@ def memcached(key, cache_time=0, key_suffix_calc_func=None):
         def cached_func(*args, **kw):
             if not MC_Available:
                 return func(*args, **kw)
-            
+
             key_with_suffix = key
             if key_suffix_calc_func:
                 key_suffix = key_suffix_calc_func(*args, **kw)
                 if key_suffix is not None:
                     key_with_suffix = '%s:%s' % (key, key_suffix)
-            
+
             mc = pylibmc.Client()
             value = mc.get(key_with_suffix)
             if value is None:
@@ -147,30 +188,43 @@ def memcached(key, cache_time=0, key_suffix_calc_func=None):
     return wrap
 
 RQT_RE = re.compile('<span id="requesttime">\d*</span>', re.I)
+PV_RE  = re.compile('<span class="categories greyhref">PageView.*?</span>', re.I)
 def pagecache(key="", time=PAGE_CACHE_TIME, key_suffix_calc_func=None):
     def _decorate(method):
         def _wrapper(*args, **kwargs):
             if not MC_Available:
                 method(*args, **kwargs)
                 return
-            
+
             req = args[0]
-            
+
             key_with_suffix = key
             if key_suffix_calc_func:
                 key_suffix = key_suffix_calc_func(*args, **kwargs)
                 if key_suffix:
-                    key_with_suffix = '%s:%s' % (key, quoted_string(key_suffix)) 
-            
+                    key_with_suffix = '%s:%s' % (key, quoted_string(key_suffix))
+
             if key_with_suffix:
                 key_with_suffix = str(key_with_suffix)
             else:
                 key_with_suffix = req.request.path
-                
+
             mc = pylibmc.Client()
             html = mc.get(key_with_suffix)
-            request_time = int(req.request.request_time()*1000)
+            #request_time = int(req.request.request_time()*1000)
             if html:
+                if key == 'post':
+                    if key_suffix:
+                        keyname = 'pv_%s' % (quoted_string(key_suffix))
+                        pvcookie = req.get_cookie(keyname,'0')
+                        #print keyname,pvcookie
+                        if int(pvcookie) == 0:
+                            req.set_cookie(keyname, '1', path = "/", expires_days =1)#不同浏览器有不同cookie
+                            increment(keyname)
+                        count = get_count(keyname)
+                        print count
+                        req.write(PV_RE.sub('<span class="categories greyhref">PageView(%d)</span>'%count, html))
+                        return _wrapper
                 req.write(html)
                 #req.write(RQT_RE.sub('<span id="requesttime">%d</span>'%request_time, html))
             else:
@@ -182,7 +236,7 @@ def pagecache(key="", time=PAGE_CACHE_TIME, key_suffix_calc_func=None):
 ###
 engine = tenjin.Engine(path=[os.path.join('templates', theme) for theme in [THEME,'admin']] + ['templates'], cache=tenjin.MemoryCacheStorage(), preprocess=True)
 class BaseHandler(tornado.web.RequestHandler):
-    
+
     def render(self, template, context=None, globals=None, layout=False):
         if context is None:
             context = {}
@@ -193,7 +247,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
     def echo(self, template, context=None, globals=None, layout=False):
         self.write(self.render(template, context, globals, layout))
-    
+
     def set_cache(self, seconds, is_privacy=None):
         if seconds <= 0:
             self.set_header('Cache-Control', 'no-cache')
@@ -206,7 +260,18 @@ class BaseHandler(tornado.web.RequestHandler):
             else:
                 privacy = 'private, '
             self.set_header('Cache-Control', '%smax-age=%s' % (privacy, seconds))
-    
+
+    def isAuthor(self):
+        user_name_cookie = self.get_cookie('username','')
+        user_pw_cookie = self.get_cookie('userpw','')
+        if user_name_cookie and user_pw_cookie:
+            from model import User
+            user = User.check_user(user_name_cookie, user_pw_cookie)
+        else:
+            user = False
+        return user
+
+
 def authorized(url='/admin/login'):
     def wrap(handler):
         def authorized_handler(self, *args, **kw):
@@ -239,3 +304,89 @@ def client_cache(seconds, privacy=None):
             return handler(self, *args, **kw)
         return cache_handler
     return wrap
+
+#==============================================================================
+#以下是在SAE上的计数器实现
+import random
+def get_count(keyname,num_shards=NUM_SHARDS,value=1):
+    """Retrieve the value for a given sharded counter.
+
+    Parameters:
+      name - The name of the counter
+    """
+    if num_shards:
+        total = 0
+        for index in range(0,num_shards):
+            shard_name = "%s:%s" % (str(keyname),str(index))
+            count = kv.get(shard_name)
+            if count:
+                total += count
+    else:
+        total = kv.get(keyname)
+        if total is None:
+            total = value
+            kv.set(keyname, total)
+    return total
+
+def set_count(keyname,num_shards=NUM_SHARDS,value=1):
+    """Retrieve the value for a given sharded counter.
+
+    Parameters:
+      name - The name of the counter
+    """
+    if num_shards:
+        #TODO
+        total = 0
+        for index in range(0,num_shards):
+            shard_name = "%s:%s" % (str(keyname),str(index))
+            count = kv.get(shard_name)
+            if count:
+                total += count
+    else:
+        kv.set(keyname, value)
+
+def increment(keyname,num_shards=NUM_SHARDS,value=1):
+    """Increment the value for a given sharded counter.
+
+    Parameters:
+      name - The name of the counter
+    """
+    if num_shards:
+        index = random.randint(0, num_shards - 1)
+        shard_name = "%s:%s" % (str(keyname),str(index))
+        count = kv.get(shard_name)
+        if count is None:
+            count = 0
+        count += value
+        kv.set(shard_name, count)
+    else:
+        count = kv.get(keyname)
+        if count is None:
+            count = 0
+        count += value
+        kv.set(keyname, count)
+    return count
+
+def clearAllKVDB():
+    total = get_count('Totalblog',NUM_SHARDS,0)
+    for loop in range(0,total+1):
+        keyname = 'pv_%d' % (loop)
+        kv.delete(keyname)
+    kv.delete('Totalblog')
+
+def getAttr(keyname):
+    value = mc.get(keyname)
+    if value is None:
+        value = kv.get(keyname)
+        if value:
+            mc.set(keyname, value, COMMON_CACHE_TIME)
+    return value
+
+def setAttr(keyname,value):
+    mc.set(keyname, value, COMMON_CACHE_TIME)
+    kv.set(keyname, value)
+
+
+
+#==============================================================================
+

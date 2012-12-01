@@ -3,7 +3,9 @@
 <li class="comment thread-even depth-1" id="comment-#{cobj.id}"> 
     <div id="div-comment-1"> 
         <div class="comment-author vcard"> 
+<?py if GRAVATAR_SUPPORT == 1: ?>
         <img alt='' src='#{cobj.gravatar}?s=48&d=monsterid' class='avatar avatar-48 photo' height='48' width='48' />
+<?py #endif ?>
         <cite class="fn">
 <?py if cobj.url: ?>
         <a href='#{cobj.url}' class='url' target="_blank" rel="nofollow">#{cobj.author}</a>

@@ -14,6 +14,11 @@
    <?py #endif ?>
    <footer>
      <a rel="full-article" href="#{obj.absolute_url}">Read On</a>
+     <a rel="full-article" href="#{obj.absolute_url}">Comment(#{obj.comment_num})</a>          
+   <?py if isauthor: ?>
+     <a rel="full-article" href="#{{BASE_URL}}/admin/edit_post/#{obj.id}">Edit</a>
+     <a rel="full-article" href="#{{BASE_URL}}/admin/del_post/#{obj.id}">Del</a>     
+   <?py #endif ?>
    </footer>
 </article>
 <?py #endfor ?>

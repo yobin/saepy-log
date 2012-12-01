@@ -10,31 +10,39 @@
 <a name="top"></a>
 <div id="contentwrap">
 		<div id="content">
-		<h1><a href="#{{BASE_URL}}" target="_blank">#{SITE_TITLE}</a></h1>
+		<h1><a href="#{{BASE_URL}}" target="_blank">#{getAttr('SITE_TITLE')}</a></h1>
         <div class="post">
-
 #{_content}
-
 		</div>
-
 </div>
-			
+
 	<div id="sidebar1wrap">
 	<h1><a href="/admin/">管理面板</a></h1>
 	<div id="sidebar1">
 		<h2 class="small">管理</h2>
 		<ul>
-			<li><a href="/admin/add_post">发表 文章</a></li>
+			<li><a href="/admin/add_post">发表文章</a></li>
 			<li><a href="/admin/edit_post/">编辑/删除 文章</a></li>
 			<li><a href="/admin/comment/">评论管理</a></li>
+<?py if LINK_BROLL_SUPPORT == True: ?>
 			<li><a href="/admin/links">友情链接管理</a></li>
-			<li><a href="/admin/flushdata">清空 缓存/数据</a></li>
+<?py #endif ?>
+			<li><a href="/admin/setting">基本设置</a></li>
+<?py if DETAIL_SETTING_SUPPORT == True: ?>
+			<li><a href="/admin/setting2">详细设置</a></li>
+<?py #endif ?>
+			<li><a href="/admin/setting3">广告设置</a></li>
+<?py if BLOG_BACKUP_SUPPORT == True: ?>
+			<li><a href="/admin/backup">博客备份</a></li>
+<?py #endif ?>
+			<li><a href="/admin/kvdb">KVDB管理</a></li>			
+                        <li><a href="/admin/flushdata">清空 缓存/数据</a></li>
 			<li><a href="/admin/logout">安全退出</a></li>
 		</ul>
-		
+
 	</div>
 </div>	</div>
-<div id="footer"><small>POWERED BY <a href="http://saepy.sinaapp.com" target="_blank">saepy-log</a></small></div>
+<div id="footer"><small>POWERED BY <a href="#{{BASE_URL}}" target="_blank">yblog</a></small></div>
 </div>
 </body>
 </html>

@@ -3,7 +3,7 @@
   <methodName>weblogUpdates.extendedPing</methodName>
   <params>
     <param>
-      <value>#{{SITE_TITLE}}</value>
+      <value>#{{getAttr('SITE_TITLE')}}</value>
     </param>
     <param>
       <value>#{{BASE_URL}}</value>

@@ -1,7 +1,9 @@
 <li class="comment even thread-even depth-1" id="comment-#{cobjid}"> 
     <div id="div-comment-1"> 
         <div class="comment-author vcard"> 
+<?py if GRAVATAR_SUPPORT: ?>
         <img alt='' src='#{gravatar}?s=48&d=monsterid' class='avatar avatar-48 photo' height='48' width='48' />
+<?py #endif ?>
         <cite class="fn">
 <?py if url: ?>
         <a href='#{url}' rel='external nofollow' class='url' target="_blank">#{author}</a>

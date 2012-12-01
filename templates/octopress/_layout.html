@@ -5,11 +5,11 @@
 <head>
   <meta charset="utf-8">
   <title>#{title}</title>
-  <meta name="author" content="#{{ADMIN_NAME}}" />
+  <meta name="author" content="#{{getAttr('ADMIN_NAME')}}" />
   <meta name="HandheldFriendly" content="True" />
   <meta name="MobileOptimized" content="320" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="alternate" type="application/rss+xml" title="#{SITE_TITLE} RSS Feed" href="#{{BASE_URL}}/feed" />
+  <link rel="alternate" type="application/rss+xml" title="#{getAttr('SITE_TITLE')} RSS Feed" href="#{{BASE_URL}}/feed" />
   <link rel="shortcut icon" href="#{{BASE_URL}}/favicon.ico" type="image" />
 
   <link href="/static/themes/octopress/css/screen.css" media="screen, projection" rel="stylesheet" type="text/css" />
@@ -17,7 +17,7 @@
   <script src="#{{JQUERY}}"></script>
   <script src="/static/themes/octopress/js/main.js"></script>
   
-  <link rel='index' title='#{SITE_TITLE}' href='#{{BASE_URL}}/' />
+  <link rel='index' title='#{getAttr('SITE_TITLE')}' href='#{{getAttr('SITE_TITLE')}}/' />
 <?py if 'postdetail' in _context and postdetail: ?>
   <link rel='start' title='${obj.title}' href='#{obj.absolute_url}' /> 
 <?py     if obj.prev_obj: ?>
@@ -49,17 +49,15 @@
                 g.fadeOut();
             }
         }); 
-    })
-    
+    })  
 </script>
-
 
 </head>
 <body>
   <header role="banner">
     <hgroup>
-      <h1><a href="/">#{{SITE_TITLE}}</a></h1>
-        <h2>#{{SITE_SUB_TITLE}}</h2>
+      <h1><a href="/">#{{getAttr('SITE_TITLE')}}</a></h1>
+        <h2>#{{getAttr('SITE_SUB_TITLE')}}</h2>
     </hgroup>
   </header>
   <nav role=navigation>
@@ -84,7 +82,8 @@
     </form>
     <ul role=main-navigation>
       <li><a href="/">Blog</a></li>
-      <li><a href="/topic/1/about">About</a></li>
+      <li><a href="archive/">Archives</a></li>
+      <li><a href="topic/2601/本博客的技术更新">About</a></li>
     </ul>
   </nav>
   <div id="main">
@@ -95,7 +94,6 @@
    #{_content}
 
 <!--  block content end -->
-
       
             <!-- block sidebar -->
             <?py include("sider.html") ?>
@@ -105,12 +103,10 @@
   </div>
   <footer>
     <p>
-    &copy; #{{COPY_YEAR}} Copyright <a href="#{{BASE_URL}}">#{{SITE_TITLE}}</a> - 
-    Powered by <a href="http://saepy.sinaapp.com/" target="_blank">SAEpy-log</a> -
-    Theme by <a href="http://www.octopress.org/" target="_blank">Octopress</a>, Improved by <a href="http://ebaby.sinaapp.com" target="_blank">Hxy</a> -
+    &copy; #{{COPY_YEAR}} Copyright <a href="#{{BASE_URL}}">#{{getAttr('SITE_TITLE')}}</a> - 
     Time: <span id="requesttime">#{ int(request.request_time()*1000) }</span> ms -
     <a href="#{{BASE_URL}}/admin/" rel="nofollow">Admin</a>
-    <a class="fr" target="_blank" href="http://sae.sina.com.cn"><img title="Powered by Sina App Engine" src="http://static.sae.sina.com.cn/image/poweredby/117X12px.gif"></a>
+    <a target="_blank" href="http://sae.sina.com.cn"><img title="Powered by Sina App Engine" src="http://static.sae.sina.com.cn/image/poweredby/117X12px.gif"></a>
     </p>
     <a style="display: none; " rel="nofollow" href="#top" id="go-to-top">▲</a>
   </footer>
@@ -129,9 +125,7 @@
 <?py #endif ?>
 
 
-<?PY if ANALYTICS_CODE: ?>
-#{{ANALYTICS_CODE}}
-<?PY #endif ?>
+#{{getAttr('ANALYTICS_CODE')}}
 
 </body>
 </html>

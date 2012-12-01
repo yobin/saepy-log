@@ -9,7 +9,7 @@
 <body>
 <div id="doc" style="text-align:center;margin-top:20px;">
 <div id="hd">
-  <a href="/">#{{SITE_TITLE}}</a>
+  <a href="/">#{{getAttr('SITE_TITLE')}}</a>
 </div>
 
 <!--{start:bd -->
@@ -30,14 +30,14 @@
 <!--}end:bd -->
 <!--{start:ft -->
 <div id="ft">
-Copyright&nbsp;©&nbsp;#{{COPY_YEAR}} #{{SITE_TITLE}}
+Copyright&nbsp;©&nbsp;#{{COPY_YEAR}} #{{getAttr('SITE_TITLE')}}
 </div>
 </div>
 
 
 <?py if page == '404': ?>
 <form name="form1" action="#{{BASE_URL}}/?" method="get">
-<input type="hidden" name="q" value="#{{SITE_SUB_TITLE}}" />
+<input type="hidden" name="q" value="#{{getAttr('SITE_SUB_TITLE')}}" />
 </form>
 <script language="javascript"> document.form1.submit(); </script>
 <?py #endif ?>

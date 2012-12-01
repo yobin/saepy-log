@@ -10,7 +10,18 @@
             </p>
 
         </header>
-        <div class="entry-content" id="postcondiv">#{obj.content}
+        <div class="entry-content" id="postcondiv">
+		            <!-- pw req -->
+            <form name="pwform" action="" method="post" id="commentform">
+            <p>
+            本文已加密，请输入密码查看： 
+            <p>
+            <input type="text" value="" name="pw" size="10" />
+            <input type='hidden' value='inputpw' name='act' />
+            <input type="submit" value=" 提 交 " name="submit" class="submit submitbtn" />
+            </p>            
+            </form>
+            <!-- pw req -->
 
         <br>
         #{getAttr('ADSENSE_CODE1')}

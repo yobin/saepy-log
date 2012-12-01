@@ -21,17 +21,19 @@
 <input type="submit" value=" 提 交 " name="submit" />
 </p>
 <p>如何知道评论id？每条评论的发表时间的连接网址如下，红色的字就是该文章的id：</p>
-<p>http://saepy.sinaapp.com/t/1#r<span class="red">29</span></p>
+<p>#{{BASE_URL}}/t/1#r<span class="red">29</span></p>
 </form>
 
 <?py #endif ?>
 <br/><br/>
 
-<h3>以下是最新 #{{RECENT_COMMENT_NUM}} 条评论</h3>
+<h3>以下是最新 #{{ADMIN_RECENT_COMMENT_NUM}} 条评论</h3>
 <?py for cobj in comments: ?>
 <hr />
-<h3>#{cobj.author}(#{cobj.email})</h3> 
-<img alt='' src='#{cobj.gravatar}?s=48&d=monsterid' height='48' width='48' />
+<h3>#{cobj.author}(#{cobj.email})</h3>
+    <?py if GRAVATAR_SUPPORT == 1: ?>
+        <img alt='' src='#{cobj.gravatar}?s=48&d=monsterid' height='48' width='48' />
+    <?py #endif ?>
 <p>id: #{cobj.id}</p>
 <p>#{cobj.content}</p>
 <p>#{cobj.add_time} ( <a href="/admin/comment/#{cobj.id}">编辑</a> | <a href="/admin/comment/#{cobj.id}?act=del">删除</a> )</p>

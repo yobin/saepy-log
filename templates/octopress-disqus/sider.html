@@ -1,3 +1,8 @@
+<?py
+from common import *
+from tenjin.helpers import *
+?>
+
 <aside role=sidebar>
 
 <section>
@@ -21,6 +26,18 @@
 </section>
 
 <section>
+    <h1>Archives</h1>
+    <p id="Archive_list">
+    <?py for archive in archives: ?>
+    	<li class="category">
+        <a title="View all posts filed under #{archive.name}" href="#{{BASE_URL}}/archive/#{archive.name}/">#{archive.name} <span class="tag_meta">(#{archive.id_num})</span></a>
+      </li>    
+    <?py #endfor ?>
+    </p>
+</section>
+
+<?py if LINK_BROLL_SUPPORT: ?>
+<section>
     <h1>Link Broll</h1>
     <ul id="Category_list">
     <?py for link in LINK_BROLL: ?>
@@ -31,5 +48,7 @@
     <?py #endfor ?>    
     </ul>
 </section>
+<?py else: ?>
+<?py #endif ?>
 
 </aside>

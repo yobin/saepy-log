@@ -1,0 +1,21 @@
+fetch_baidu.py说明: 
+
+适用范围：
+1. 百度新空间，如果没有升级的话，需要自行写程序。
+2. 这个是半年前的代码了，直接从我SAE SVN上拖下来的，希望还能工作。不行了自己尝试调试一下。
+
+功能：
+1. 支持将百度新空间的博客迁移到配套的SAE python代码中，对应程序baidu.handledall('move')
+2. 支持百度新空间的博客下载，对应程序baidu.handledall('downlaod')
+
+迁移脚本需要修改的几个参数：
+blog = "" #你自己的百度博客链接，填http://hi.baidu.com/new/***
+baidu_user   = ''                #你的百度登录名,暂未考虑中文ID，中文ID需要自行扩展程序支持
+baidu_psw    = ''                 #你的百度登陆密码,如果不输入用户名和密码，就没法获取私有的文章
+
+moveurl      = 'http://***.sinaapp.com/admin/moveblog'  #新博客对应的迁移入口，记得填上自己的ID
+privatepsw   = ''        #新博客私有文章，默认迁移到SAE上加上密码
+
+movesecret   = '123456'  #新博客的密码，跟SAE博客程序setting.py上设定的相呼应。你总不能希望有人找到这个后门给你发表一大堆垃圾文章吧.
+                         #对了，一些配置性的东西，我从setting.py中注掉了，改在admin后台自己配置了。这个movesecret也好像是如此的，可以搜代码。
+

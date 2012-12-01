@@ -1,4 +1,9 @@
-<h1><a href="#{{BASE_URL}}">#{{SITE_TITLE2}}</a></h1>
+<?py
+from common import *
+from tenjin.helpers import *
+?>
+
+<h1><a href="#{{BASE_URL}}">#{{getAttr('SITE_TITLE2'}}</a></h1>
 	<div id="sidebar1">
 		<h2 class="small">分类</h2>
 		<ul>
@@ -13,6 +18,13 @@
 <a href="#{{BASE_URL}}/tag/#{tagi.name}/">#{tagi.name}</a>
 <?py #endfor ?>
 
+		<h2 class="small">归档</h2>
+		<ul>
+<?py for archive in archives: ?>
+			<li class="cat-item cat-item-#{archive.name}"><a href="#{{BASE_URL}}/archive/#{archive.name}/" title="View all posts filed under #{archive.name}">#{archive.name}</a></li>
+<?py #endfor ?>
+		</ul>
+		
 <div class="c"></div>
 
 		</div>
@@ -22,12 +34,18 @@
 
 		<ul class="comments">
 		<?py for each in comments: ?>
-		<li style="background: url('#{each.gravatar}?s=30&d=monsterid') no-repeat;">#{each.author} Says: <span class="grey">#{each.add_time}</span> <br/> <a href="#{{BASE_URL}}/t/#{each.postid}#r#{each.id}">#{each.short_content}</a></li>
+			<?py if GRAVATAR_SUPPORT: ?>
+				<li style="background: url('#{each.gravatar}?s=30&d=monsterid') no-repeat;">
+			<?py #endif ?>
+			#{each.author} Says: <span class="grey">#{each.add_time}</span> <br/> <a href="#{{BASE_URL}}/t/#{each.postid}#r#{each.id}">#{each.short_content}</a></li>
 		<?py #endfor ?>
 		<div class="c"></div>		
 		</ul>
 <?py #endif ?>
 
-<?py include("links.html") ?>
+<?py if LINK_BROLL_SUPPORT: ?>
+	<?py include("links.html") ?>
+<?py else: ?>
+<?py #endif ?>
 
 	</div>

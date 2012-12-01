@@ -3,7 +3,9 @@
 <li id="comment-#{cobj.id}"> 
     <div> 
         <div> 
+<?py if GRAVATAR_SUPPORT == 1: ?>
         <img alt='' src="#{cobj.gravatar}?s=48&d=monsterid" class='avatar' height='48' width='48' />
+<?py #endif ?>
         <div class="fl">
 <?py if cobj.url: ?>
         <a href='#{cobj.url}' target="_blank" rel="nofollow">#{cobj.author}</a>

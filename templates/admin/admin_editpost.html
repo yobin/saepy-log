@@ -55,7 +55,8 @@ $(document).ready(function()	{
 
 <label>关闭评论 <input type="checkbox" id="clo" value="True" tabindex="5" #{ck[obj.closecomment]} /></label>
 
-<?py if use_default_theme: ?>
+<!--use_default_theme-->
+<?py if 1: ?>
  | 设置阅读密码: <input type="text" id="password" style="width:150px;" value="${obj.password}" tabindex="6" /> 8s
 <?py else: ?>
 <input type='hidden' value='' id="password" />
@@ -194,8 +195,8 @@ $('#filetoupload').change(function() {
 <input type="submit" value=" 提 交 " name="submit" />
 </p>
 <p>如何知道文章id？示例文章网址如下，红色的字就是该文章的id：</p>
-<p>地址栏里的网址 http://saepy.sinaapp.com/topic/<span class="red">12</span>/sae-python-使用memcache-手记</p>
-<p>文章底部的 [本文引用地址] http://saepy.sinaapp.com/t/<span class="red">12</span></p>
+<p>地址栏里的网址 #{{BASE_URL}}/topic/<span class="red">12</span>/sae-python-使用memcache-手记</p>
+<p>文章底部的 [本文引用地址] #{{BASE_URL}}/t/<span class="red">12</span></p>
 </form>
 
 <?py #endif ?>
