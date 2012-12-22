@@ -175,8 +175,18 @@ def memcached(key, cache_time=0, key_suffix_calc_func=None):
                 if key_suffix is not None:
                     key_with_suffix = '%s:%s' % (key, key_suffix)
 
-            mc = pylibmc.Client()
-            value = mc.get(key_with_suffix)
+            #yobin 201222 for SAE mc.get error
+            try:
+                mc = pylibmc.Client()
+                value = mc.get(key_with_suffix)
+            except:
+                value = func(*args, **kw)
+                try:
+                    mc.set(key_with_suffix, value, cache_time)
+                except:
+                    pass
+                return value
+
             if value is None:
                 value = func(*args, **kw)
                 try:
@@ -209,8 +219,19 @@ def pagecache(key="", time=PAGE_CACHE_TIME, key_suffix_calc_func=None):
             else:
                 key_with_suffix = req.request.path
 
-            mc = pylibmc.Client()
-            html = mc.get(key_with_suffix)
+            #yobin 20121222 fixed SAE mc error
+            #html = mc.get(key_with_suffix) ConnectionError: error 3 from memcached_get: CONNECTION FAILURE
+            try:
+                mc = pylibmc.Client()
+                html = mc.get(key_with_suffix)
+            except:
+                result = method(*args, **kwargs)
+                try:
+                    mc.set(key_with_suffix, result, time)
+                except:
+                    pass
+                return _wrapper
+
             #request_time = int(req.request.request_time()*1000)
             if html:
                 if key == 'post':
@@ -375,12 +396,17 @@ def clearAllKVDB():
     kv.delete('Totalblog')
 
 def getAttr(keyname):
-    value = mc.get(keyname)
-    if value is None:
-        value = kv.get(keyname)
-        if value:
-            mc.set(keyname, value, COMMON_CACHE_TIME)
-    return value
+    #yobin 20121222 fixed SAE mc error
+    #value = mc.get(keyname) ConnectionError: error 3 from memcached_get: CONNECTION FAILURE
+    try:
+        value = mc.get(keyname)
+        if value is None:
+            value = kv.get(keyname)
+            if value:
+                mc.set(keyname, value, COMMON_CACHE_TIME)
+        return value
+    except:
+        return None
 
 def setAttr(keyname,value):
     mc.set(keyname, value, COMMON_CACHE_TIME)
