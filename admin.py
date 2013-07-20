@@ -22,9 +22,14 @@ if not debug:
     import sae.mail
     from sae.taskqueue import add_task
     import sae.storage
+    from sae.storage import Bucket
 
 ######
 def put_obj2storage(file_name = '', data = '', expires='365', type=None, encoding= None, domain_name = STORAGE_DOMAIN_NAME):
+    bucket = Bucket('attachment')
+    bucket.put_object(file_name, data, content_type=type, content_encoding= encoding)
+    return bucket.generate_url(file_name)
+
     s = sae.storage.Client()
     ob = sae.storage.Object(data = data, cache_control='access plus %s day' % expires, content_type= type, content_encoding= encoding)
     return s.put(domain_name, file_name, ob)
@@ -186,7 +191,7 @@ class AddPost(BaseHandler):
         if postid:
             keyname = 'pv_%s' % (str(postid))
             set_count(keyname,0,0)
-            
+
             Category.add_postid_to_cat(post_dic['category'], str(postid))
             Archive.add_postid_to_archive(genArchive(), str(postid))
             increment('Totalblog')
@@ -264,7 +269,7 @@ class EditPost(BaseHandler):
             return
 
         postid = Article.update_post_edit(post_dic)
-        if postid:           
+        if postid:
             cache_key_list = ['/', 'post:%s'% id, 'cat:%s' % quoted_string(oldobj.category)]
             if oldobj.category != post_dic['category']:
                 #cat changed
@@ -544,7 +549,7 @@ class KVDBAdmin(BaseHandler):
     def post(self):
         self.redirect('%s/admin/kvdb'% (BASE_URL))
         return
-        
+
 class FlushData(BaseHandler):
     @authorized()
     def get(self):
@@ -767,6 +772,6 @@ urls = [
     #(r"/admin/setting2", BlogSetting2),
     (r"/admin/setting3", BlogSetting3),
     (r"/admin/moveblog", MovePost),
-    (r"/admin/kvdb", KVDBAdmin),    
+    (r"/admin/kvdb", KVDBAdmin),
     (r".*", NotFoundPage)
 ]
