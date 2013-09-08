@@ -2,15 +2,27 @@
 <?py if obj: ?>
 <!-- rich editer -->
 <script type="text/javascript" src="#{JQUERY}"></script>
+<link rel="stylesheet" type="text/css" href="/static/markitup/skins/simple/style.css" />
+
+<?py if getAttr('MARKDOWN'): ?>
+<link rel="stylesheet" type="text/css" href="/static/markitup/sets/markdown/style.css" />
+<script type="text/javascript" src="/static/markitup/jquery.markitup.js"></script>
+<script type="text/javascript" src="/static/markitup/sets/markdown/set.js"></script>
+<?py else: ?>
 <script type="text/javascript" src="/static/markitup/jquery.markitup.js"></script>
 <script type="text/javascript" src="/static/markitup/sets/html/set.js"></script>
-<link rel="stylesheet" type="text/css" href="/static/markitup/skins/simple/style.css" />
 <link rel="stylesheet" type="text/css" href="/static/markitup/sets/html/style.css" />
+<?py #endif ?>
 <script type="text/javascript">
 <!--
 $(document).ready(function()	{
+<?py if getAttr('MARKDOWN'): ?>
+    myMarkdownSettings.previewParserPath =  '/admin/markitup/preview';
+    $('#html').markItUp(myMarkdownSettings);
+<?py else: ?>
 	// Add markItUp! to your textarea in one line
 	$('#html').markItUp(myHtmlSettings);
+<?py #endif ?>
 });
 -->
 </script>

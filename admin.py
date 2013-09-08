@@ -18,6 +18,9 @@ from common import *
 from setting import *
 from model import Article, Comment, Link, Category, Tag, User, MyData, Archive
 
+import markdown2 as markdown
+from plugins import parse_text
+
 if not debug:
     import sae.mail
     from sae.taskqueue import add_task
@@ -144,6 +147,19 @@ class FileUpload(BaseHandler):
         self.write(json.dumps(rspd))
         return
 
+
+class PostPrevewPage(BaseHandler):
+    @authorized()
+    def get(self):
+        self.write("This is a preview page.")
+
+    @authorized()
+    def post(self):
+        data = self.get_argument("data", "no post data")
+        if data:
+            data = markdown.markdown(parse_text(data))
+        self.echo("admin_preview.html", {"title":"Post preview", "data": data})
+
 class AddPost(BaseHandler):
     @authorized()
     def get(self):
@@ -161,10 +177,14 @@ class AddPost(BaseHandler):
         try:
             tf = {'true':1,'false':0}
             timestamp = int(time())
+            content = self.get_argument("con")
+            if getAttr('MARKDOWN'):
+                content = markdown.markdown(parse_text(content))
+                content = content.encode("utf-8")
             post_dic = {
                 'category': self.get_argument("cat"),
                 'title': self.get_argument("tit"),
-                'content': self.get_argument("con"),
+                'content': content,
                 'tags': self.get_argument("tag",'').replace(u'，',','),
                 'closecomment': self.get_argument("clo",'0'),
                 'password': self.get_argument("password",''),
@@ -238,13 +258,18 @@ class EditPost(BaseHandler):
         rspd = {'status': 201, 'msg':'ok'}
         oldobj = Article.get_article_by_id_edit(id)
 
+        content = self.get_argument("con")
+        if getAttr('MARKDOWN'):
+            content = markdown.markdown(parse_text(content))
+            content = content.encode("utf-8")
+
         try:
             tf = {'true':1,'false':0}
             timestamp = int(time())
             post_dic = {
                 'category': self.get_argument("cat"),
                 'title': self.get_argument("tit"),
-                'content': self.get_argument("con"),
+                'content': content,
                 'tags': self.get_argument("tag",'').replace(u'，',','),
                 'closecomment': self.get_argument("clo",'false'),
                 'password': self.get_argument("password",''),
@@ -427,6 +452,7 @@ class BlogSetting(BaseHandler):
             'mailsmtp':getAttr('MAIL_SMTP'),
             'port':getAttr('MAIL_PORT'),
             'move_secret':getAttr('MOVE_SECRET'),
+            'markdown':getAttr('MARKDOWN'),
         },layout='_layout_admin.html')
 
     @authorized()
@@ -479,6 +505,9 @@ class BlogSetting(BaseHandler):
         if value:
             setAttr('MAIL_PORT',value)
 
+        value = self.get_argument("markdown",'')
+        setAttr('MARKDOWN',value)
+
         clear_cache_by_pathlist(['/'])
 
         self.redirect('%s/admin/setting'% (BASE_URL))
@@ -521,16 +550,13 @@ class BlogSetting3(BaseHandler):
     @authorized()
     def post(self):
         ANALYTICS_CODE = self.get_argument("ANALYTICS_CODE",'')
-        if ANALYTICS_CODE:
-            setAttr('ANALYTICS_CODE',ANALYTICS_CODE)
+        setAttr('ANALYTICS_CODE',ANALYTICS_CODE)
 
         ADSENSE_CODE1 = self.get_argument("ADSENSE_CODE1",'')
-        if ADSENSE_CODE1:
-            setAttr('ADSENSE_CODE1',ADSENSE_CODE1)
+        setAttr('ADSENSE_CODE1',ADSENSE_CODE1)
 
         ADSENSE_CODE2 = self.get_argument("ADSENSE_CODE2",'')
-        if ADSENSE_CODE2:
-            setAttr('ADSENSE_CODE2',ADSENSE_CODE2)
+        setAttr('ADSENSE_CODE2',ADSENSE_CODE2)
 
         clear_cache_by_pathlist(['/'])
 
@@ -650,6 +676,8 @@ def Init():
         setAttr('HOT_TAGS_NUM',30)
     if not getAttr('MOVE_SECRET'):
         setAttr('MOVE_SECRET','123456')
+    if not getAttr('MARKDOWN'):
+        setAttr('MARKDOWN','')
 
 class Install(BaseHandler):
     def get(self):
@@ -773,5 +801,6 @@ urls = [
     (r"/admin/setting3", BlogSetting3),
     (r"/admin/moveblog", MovePost),
     (r"/admin/kvdb", KVDBAdmin),
+    (r"/admin/markitup/preview", PostPrevewPage),
     (r".*", NotFoundPage)
 ]
