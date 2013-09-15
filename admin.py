@@ -179,7 +179,7 @@ class AddPost(BaseHandler):
             timestamp = int(time())
             content = self.get_argument("con")
             if getAttr('MARKDOWN'):
-                content = markdown.markdown(parse_text(content))
+                #content = markdown.markdown(parse_text(content))
                 content = content.encode("utf-8")
             post_dic = {
                 'category': self.get_argument("cat"),
@@ -260,7 +260,7 @@ class EditPost(BaseHandler):
 
         content = self.get_argument("con")
         if getAttr('MARKDOWN'):
-            content = markdown.markdown(parse_text(content))
+            #content = markdown.markdown(parse_text(content))
             content = content.encode("utf-8")
 
         try:

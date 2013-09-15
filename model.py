@@ -14,6 +14,9 @@ try:
 except:
     pass
 
+import markdown2 as markdown
+from plugins import parse_text
+
 ##
 ##数据库配置信息
 if debug:
@@ -58,11 +61,16 @@ def post_detail_formate(obj):
         obj.slug = slug
         obj.absolute_url = '%s/topic/%d/%s' % (BASE_URL, obj.id, slug)
         obj.shorten_url = '%s/t/%s' % (BASE_URL, obj.id)
-        if '[/code]' in obj.content:
-            obj.highlight = True
-        else:
+
+        if getAttr('MARKDOWN'):
             obj.highlight = False
-        obj.content = tran_content(obj.content, obj.highlight)
+            obj.content =  markdown.markdown(parse_text(obj.content))
+        else:
+            if '[/code]' in obj.content:
+                obj.highlight = True
+            else:
+                obj.highlight = False
+            obj.content = tran_content(obj.content, obj.highlight)
         obj.taglist = ', '.join(["""<a href="%s/tag/%s/" rel="tag">%s</a>"""%(BASE_URL, tag, tag) for tag in obj.tags.split(',')])
         obj.add_time_fn = time_from_now(int(obj.add_time))
         obj.last_modified = timestamp_to_datetime(obj.edit_time)
