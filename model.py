@@ -35,7 +35,7 @@ else:
 #从数据库 读取
 
 ##
-HTML_REG = re.compile(r"""<[^>]+>""", re.I|re.M|re.S)
+#HTML_REG = re.compile(r"""<[^>]+>""", re.I|re.M|re.S)
 
 mdb = database.Connection("%s:%s"%(MYSQL_HOST_M,str(MYSQL_PORT)), MYSQL_DB,MYSQL_USER, MYSQL_PASS, max_idle_time = MAX_IDLE_TIME)
 sdb = database.Connection("%s:%s"%(MYSQL_HOST_S,str(MYSQL_PORT)), MYSQL_DB,MYSQL_USER, MYSQL_PASS, max_idle_time = MAX_IDLE_TIME)
@@ -62,7 +62,8 @@ def post_detail_formate(obj):
         obj.absolute_url = '%s/topic/%d/%s' % (BASE_URL, obj.id, slug)
         obj.shorten_url = '%s/t/%s' % (BASE_URL, obj.id)
 
-        if getAttr('MARKDOWN'):
+        #if getAttr('MARKDOWN'):
+        if False:#yobin 20131023
             obj.highlight = False
             obj.content =  markdown.markdown(parse_text(obj.content))
         else:
@@ -172,6 +173,26 @@ class Article():
     def get_article_by_id_detail(self, id):
         sdb._ensure_connected()
         return post_detail_formate(sdb.get('SELECT * FROM `sp_posts` WHERE `id` = %s LIMIT 1' % str(id)))
+
+    #yobin add 20131021 for weixin begin
+    #模糊查询文章
+    def get_article_by_keyword(self, keyword):
+        return ''
+        sdb._ensure_connected()
+        keyword_quote = '%'+ keyword +'%'
+        return post_detail_formate(sdb.get('SELECT * FROM `sp_posts` WHERE `title` LIKE %s OR `tags` LIKE %s LIMIT 1' , str(keyword_quote), str(keyword_quote)))
+
+    # 最新文章
+    def get_articles_by_latest(self):
+        sdb._ensure_connected()
+        posts = sdb.query('SELECT * FROM `sp_posts` ORDER BY `id` DESC LIMIT %d' % (WX_MAX_ARTICLE))
+        return [post_detail_formate(post) for post in posts]
+
+    def get_articles_list(self):
+        sdb._ensure_connected()
+        article_list = sdb.query('SELECT `id`,`title`,`category` FROM `sp_posts` ORDER BY `id` DESC LIMIT 20')
+        return article_list
+    #yobin add 20131021 for weixin end
 
     def get_article_by_id_simple(self, id):
         sdb._ensure_connected()
@@ -286,7 +307,7 @@ Link = Link()
 class Category():
     def get_all_cat_name(self):
         sdb._ensure_connected()
-        return sdb.query('SELECT `name`,`id_num` FROM `sp_category` ORDER BY `id` DESC')
+        return sdb.query('SELECT `name`,`id_num`,`id` FROM `sp_category` ORDER BY `id` DESC')
 
     def get_all_cat(self):
         sdb._ensure_connected()
@@ -306,6 +327,18 @@ class Category():
             return len(obj.content.split(','))
         else:
             return 0
+
+    #yobin 20131023 added for weixin begin
+    def get_cat_page_posts_by_cid(self, cid = '', page = 1, limit = WX_MAX_ARTICLE):
+        obj = self.get_cat_by_id(cid)
+        if obj:
+            page = int(page)
+            idlist = obj.content.split(',')
+            getids = idlist[limit*(page-1):limit*page]
+            sdb._ensure_connected()
+            return post_list_format(sdb.query("SELECT * FROM `sp_posts` WHERE `id` in(%s) ORDER BY `id` DESC LIMIT %s" % (','.join(getids), str(len(getids)))))
+        return []
+    #yobin 20131023 added for weixin end
 
     def get_cat_page_posts(self, name = '', page = 1, limit = EACH_PAGE_POST_NUM):
         obj = self.get_cat_by_name(name)

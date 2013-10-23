@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
 
 import logging
-
 import json
-
 from hashlib import md5
 from time import time
 
 from setting import *
-
 from common import *
-
 from model import Article, Comment, Link, Category, Tag, Archive
+
+#yobin 20131023 for weixin begin
+from wechat import WeiXin
+import urllib2,urllib
+import tornado.wsgi
+import tornado.escape
+#yobin 20131023 for weixin end
 
 ###############
 class HomePage(BaseHandler):
@@ -484,6 +487,245 @@ class Attachment(BaseHandler):
         self.redirect('http://%s-%s.stor.sinaapp.com/%s'% (APP_NAME, STORAGE_DOMAIN_NAME, unquoted_unicode(name)), 301)
         return
 
+#yobin 20131023 for weixin begin
+class WxParser(BaseHandler):
+    #只是用来做验证的
+    def get(self):
+        signature = str(self.get_argument('signature',''))
+        echostr = str(self.get_argument('echostr',''))
+        timestamp = str(self.get_argument('timestamp',''))
+        nonce = str(self.get_argument('nonce',''))
+
+        weixin = WeiXin.on_connect(token=WX_TOKEN,
+            timestamp=timestamp,
+            nonce=nonce,
+            signature=signature,
+            echostr=echostr)
+        if weixin.validate():
+            return self.write(echostr)
+        return self.write('')
+
+    def post(self):
+        body = self.request.body
+        weixin = WeiXin.on_message(body)
+        mydict = weixin.to_json()
+
+        print "mydict['MsgType'] = %s" % (mydict['MsgType'])
+
+        if mydict['MsgType'] == 'text':
+            content = mydict['Content'].encode('utf-8')
+            print 'content = %s' % (content)
+
+            help = self.get_help_menu()
+            reply = ""
+
+            #TBD 分词这部分需要改造,urllib2不能用？
+            if len(content) > 100000:
+                _SEGMENT_BASE_URL = 'http://segment.sae.sina.com.cn/urlclient.php'
+                payload = urllib.urlencode([('context', content),])
+                args = urllib.urlencode([('word_tag', 1), ('encoding', 'UTF-8'),])
+                url = _SEGMENT_BASE_URL + '?' + args
+                result = urllib2.urlopen(url, payload).read()
+                if result:
+                    result = eval(result)
+                    content = ' '.join(w["word"] for w in result)
+
+            cmd = content[0]
+            if cmd == "n":
+                rsp = self.wx_get_latest_articles()
+                if rsp:
+                    reply = weixin.pack_news_xml(mydict,rsp)
+            elif cmd == "c":#获取分类列表
+                if len(content) == 1:
+                    rsp = self.wx_get_categories()
+                    if rsp:
+                        reply = weixin.pack_text_xml(mydict,rsp)
+                else:
+                    cid = content[1:]
+                    rsp = self.get_category_articles(cid)
+                    if rsp:
+                        reply = weixin.pack_news_xml(mydict,rsp)
+            elif cmd == "l":#列举最新20篇文章条列表
+                rsp = self.wx_get_articles()
+                if rsp:
+                    reply = weixin.pack_text_xml(mydict,rsp)
+            elif cmd == "v":# 直接获取某篇文章
+                article_id = int(content[1:])
+                rsp = self.wx_get_article_by_id(article_id)
+                if rsp:
+                    reply = weixin.pack_news_xml(mydict,rsp)
+            elif cmd == "s":
+                #搜索太耗费资源了，而且可能也会有sql注入等安全问题
+                #代码只是写写，实际上不会使用
+                k = str(content[1:])
+                rsp = self.wx_search_article(k)
+                if rsp:
+                    #reply = weixin.pack_news_xml(mydict,rsp)
+                    reply = weixin.pack_news_xml(mydict,"抱歉，此功能暂停使用")
+                else:
+                    reply = weixin.pack_text_xml(mydict,"抱歉，没有搜到相关关键词")
+
+            if not reply:
+                reply = weixin.pack_text_xml(mydict,help)
+
+            self.set_header('Content-Type','application/xml')
+            return self.write(reply)
+
+		#以下要后续再拓展了
+        elif mydict['MsgType'] == 'image':
+            pass
+            #wx_handle_pic(mydict['PicUrl'])
+        elif mydict['MsgType'] == 'location':
+            pass
+            #wx_handle_loc(mydict['Location_X'],mydict['Location_Y'],mydict['Scale'],mydict['Label'])
+        elif mydict['MsgType'] == 'link':
+            pass
+            #wx_handle_link(mydict['Title'],mydict['Description'],mydict['Url'])
+        elif mydict['MsgType'] == 'event':
+            print "mydict['Event'] = %s" % (mydict['Event'])
+            if 'subscribe' == mydict['Event']:
+                reply = weixin.to_xml(to_user_name=mydict['FromUserName'],
+                            from_user_name=mydict['ToUserName'],
+                            msg_type='text',
+                            content='欢迎欢迎，热烈欢迎。',
+                            create_time=str(int(time())),
+                            )
+                self.set_header('Content-Type','application/xml')
+                return self.write(reply)
+            elif 'unsubscribe' == mydict['Event']:
+                reply = weixin.to_xml(to_user_name=mydict['FromUserName'],
+                            from_user_name=mydict['ToUserName'],
+                            msg_type='text',
+                            content='青山不在，绿水长流，后会有期！',
+                            create_time=str(int(time())),
+                            )
+                self.set_header('Content-Type','application/xml')
+                return self.write(reply)
+            else:
+                pass
+            wx_handletext(mydict['Event'],mydict['EventKey'])
+        else:
+            print "Nootice: mydict['MsgType'] = %s" % (mydict['MsgType'])
+        return self.write('')
+
+    #帮助信息
+    def get_help_menu(self):
+    	help = '''欢迎关注，回复如下按键则可以完成得到相应的回应
+    	n : 获取最新文章
+    	l ：最新文章列表(article list)
+    	v + 数字 ：察看某篇文章 v1938 察看第1938篇文章
+    	c : 获得分类列表
+    	c + 数字 ： 获取分类文章，如c7 察看读书笔记
+        '''
+    	return help
+
+    # n for 获取最新的文章
+    def wx_get_latest_articles(self):
+        posts = Article.get_articles_by_latest()
+        articles_msg = {'articles':[]}
+        for post in posts:
+            slug        = slugfy(post['title'])
+            desc        = HTML_REG.sub('',post['content'][:DESCRIPTION_CUT_WORDS])
+            shorten_url = '%s/t/%s' % (BASE_URL, post['id'])
+
+            article = {
+                       'title': slug,
+                       'description':desc,
+                       'picUrl':WX_DEFAULT_PIC,
+                       'url':shorten_url,
+                   }
+            # 插入文章
+            articles_msg['articles'].append(article)
+            article = {}
+        return articles_msg
+
+    # 获取文章列表
+    def wx_get_articles(self):
+        article_list = Article.get_articles_list()
+        article_list_str = "最新文章列表供您点阅，回复v+数字即可阅读: \n"
+        for i in range(len(article_list)):
+            art_id = str(article_list[i].id)
+            art_title = article_list[i].title
+            art_title = tornado.escape.native_str(art_title)
+            art_category = article_list[i].category
+            art_category = tornado.escape.native_str(art_category)
+            article_list_str +=  art_id + ' ' + art_title + ' ' + art_category + '\n'
+        return article_list_str
+
+    #获取目录列表
+    def wx_get_categories(self):
+        cat_list = Category.get_all_cat_name()
+        catstr = "分类列表如下，回复c+分类序号，即可获取该分类文章：\n"
+        mylist = ["%d %s" % (int(cat.id),(cat.name).encode('utf-8')) for cat in cat_list]
+        mylist.reverse()
+        catstr += "\n".join(mylist)
+        return catstr
+
+    # 按照分类查找
+    def get_category_articles(self, cid):
+        article_list = Category.get_cat_page_posts_by_cid(cid)
+        if article_list:
+            articles_msg = {'articles':[]}
+            for obj in article_list:
+                slug        = slugfy(obj['title'])
+                desc        = HTML_REG.sub('',obj.content[:DESCRIPTION_CUT_WORDS])
+                shorten_url = '%s/t/%s' % (BASE_URL, obj['id'])
+                article = {
+                        'title': slug,
+                        'description':desc,
+                        'picUrl':WX_DEFAULT_PIC,
+                        'url':shorten_url,
+                    }
+                articles_msg['articles'].append(article)
+                article = {}
+            return articles_msg
+        return ''
+
+    #根据关键词搜索文章，此函数用不到了
+    def wx_search_article(self, k):
+        article = Article.get_article_by_keyword(k)
+        if article:
+            title = article.slug
+            description = article.description
+            picUrl = WX_DEFAULT_PIC
+            url = article.absolute_url
+            count = 1
+            articles_msg = {'articles':[]}
+            for i in range(0,count):
+                article = {
+                        'title':title,
+                        'description':description,
+                        'picUrl':picUrl,
+                        'url':url
+                    }
+                articles_msg['articles'].append(article)
+                article = {}
+            return articles_msg
+        return ''
+
+    def wx_get_article_by_id(self, post_id):
+        article = Article.get_article_by_id_detail(post_id)
+        if article:
+            title = article.slug
+            description = article.description
+            picUrl = WX_DEFAULT_PIC
+            url = article.absolute_url
+            count = 1
+
+            articles_msg = {'articles':[]}
+            for i in range(0,count):
+                article = {
+                        'title':title,
+                        'description':description,
+                        'picUrl':picUrl,
+                        'url':url
+                    }
+                articles_msg['articles'].append(article)
+                article = {}
+            return articles_msg
+        return ''
+#yobin 20131023 for weixin end
+
 ########
 urls = [
     (r"/", HomePage),
@@ -501,5 +743,6 @@ urls = [
     (r"/(cat|tag|archive)_(prev|next)_page/(\d+)/(.+)/$", ArticleList),
     (r"/sitemap_(\d+)\.xml$", Sitemap),
     (r"/attachment/(.+)$", Attachment),
+    (r"/wx",WxParser),
 ]
 

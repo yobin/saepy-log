@@ -50,7 +50,8 @@ def slugfy(text, separator='-'):
     ret = re.sub("[\s]+", separator, ret)
     return ret
 
-CODE_RE = re.compile(r"""\[code\](.+?)\[/code\]""",re.I|re.M|re.S)
+CODE_RE  = re.compile(r"""\[code\](.+?)\[/code\]""",re.I|re.M|re.S)
+HTML_REG = re.compile(r"""<[^>]+>""", re.I|re.M|re.S)
 
 def n2br(text):
     con = text.replace('>\n\n','>').replace('>\n','>')
@@ -411,7 +412,6 @@ def getAttr(keyname):
 def setAttr(keyname,value):
     mc.set(keyname, value, COMMON_CACHE_TIME)
     kv.set(keyname, value)
-
 
 
 #==============================================================================

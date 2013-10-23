@@ -118,3 +118,11 @@ else:
 #MOVE_SECRET = '123456' #迁移博客的密码
 
 DETAIL_SETTING_SUPPORT = False #是否支持详细设置
+
+#微信验证码，这是要在微信后台填的字符串，验证是否拥有网站所有权用的
+WX_TOKEN = '123456'
+#微信最大显示的文章数
+WX_MAX_ARTICLE = 5
+#微信文章默认图片
+WX_DEFAULT_PIC = "http://yobin-attachment.stor.sinaapp.com/zhaoyang1.jpg"
+
