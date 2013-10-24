@@ -426,7 +426,7 @@ def setMc(keyname,value,cachetime = COMMON_CACHE_TIME):
     mc.set(keyname, value, cachetime)
 
 def clearWxMc():
-    if pathlist and MC_Available:
+    if MC_Available:
         try:
             from model import Category
             cids = Category.get_all_cat_id()
