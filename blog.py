@@ -546,7 +546,7 @@ class WxParser(BaseHandler):
                     if rsp:
                         reply = weixin.pack_news_xml(mydict,rsp)
             elif cmd == "l":#列举最新20篇文章条列表
-                rsp = self.wx_get_articles()
+                rsp = self.wx_get_artlists()
                 if rsp:
                     reply = weixin.pack_text_xml(mydict,rsp)
             elif cmd == "v":# 直接获取某篇文章
@@ -554,17 +554,16 @@ class WxParser(BaseHandler):
                 rsp = self.wx_get_article_by_id(article_id)
                 if rsp:
                     reply = weixin.pack_news_xml(mydict,rsp)
-            elif cmd == "s":
-                #搜索太耗费资源了，而且可能也会有sql注入等安全问题
-                #代码只是写写，实际上不会使用
-                k = str(content[1:])
-                rsp = self.wx_search_article(k)
-                if rsp:
-                    #reply = weixin.pack_news_xml(mydict,rsp)
-                    reply = weixin.pack_news_xml(mydict,"抱歉，此功能暂停使用")
-                else:
-                    reply = weixin.pack_text_xml(mydict,"抱歉，没有搜到相关关键词")
-
+            #elif cmd == "s":
+            #    #搜索太耗费资源了，而且可能也会有sql注入等安全问题
+            #    #代码只是写写，实际上不会使用
+            #    k = str(content[1:])
+            #    rsp = self.wx_search_article(k)
+            #    if rsp:
+            #        #reply = weixin.pack_news_xml(mydict,rsp)
+            #        reply = weixin.pack_news_xml(mydict,"抱歉，此功能暂停使用")
+            #    else:
+            #        reply = weixin.pack_text_xml(mydict,"抱歉，没有搜到相关关键词")
             if not reply:
                 reply = weixin.pack_text_xml(mydict,help)
 
@@ -621,6 +620,11 @@ class WxParser(BaseHandler):
 
     # n for 获取最新的文章
     def wx_get_latest_articles(self):
+        k = 'wx_latest'
+        v = getMc(k)
+        if v:
+            return v
+
         posts = Article.get_articles_by_latest()
         articles_msg = {'articles':[]}
         for post in posts:
@@ -637,10 +641,17 @@ class WxParser(BaseHandler):
             # 插入文章
             articles_msg['articles'].append(article)
             article = {}
+
+        setMc(k,articles_msg)
         return articles_msg
 
     # 获取文章列表
-    def wx_get_articles(self):
+    def wx_get_artlists(self):
+        k = 'wx_artlists'
+        v = getMc(k)
+        if v:
+            return v
+
         article_list = Article.get_articles_list()
         article_list_str = "最新文章列表供您点阅，回复v+数字即可阅读: \n"
         for i in range(len(article_list)):
@@ -650,19 +661,33 @@ class WxParser(BaseHandler):
             art_category = article_list[i].category
             art_category = tornado.escape.native_str(art_category)
             article_list_str +=  art_id + ' ' + art_title + ' ' + art_category + '\n'
+
+        setMc(k,article_list_str)
         return article_list_str
 
     #获取目录列表
     def wx_get_categories(self):
+        k = 'wx_cats'
+        v = getMc(k)
+        if v:
+            return v
+
         cat_list = Category.get_all_cat_name()
-        catstr = "分类列表如下，回复c+分类序号，即可获取该分类文章：\n"
+        catstr = "分类列表如下，回复c+数字，即可获取该分类文章：\n"
         mylist = ["%d %s" % (int(cat.id),(cat.name).encode('utf-8')) for cat in cat_list]
         mylist.reverse()
         catstr += "\n".join(mylist)
+
+        setMc(k,catstr)
         return catstr
 
     # 按照分类查找
     def get_category_articles(self, cid):
+        k = 'wx_cat_%s' % (str(cid))
+        v = getMc(k)
+        if v:
+            return v
+
         article_list = Category.get_cat_page_posts_by_cid(cid)
         if article_list:
             articles_msg = {'articles':[]}
@@ -678,10 +703,11 @@ class WxParser(BaseHandler):
                     }
                 articles_msg['articles'].append(article)
                 article = {}
+            setMc(k,articles_msg)
             return articles_msg
         return ''
 
-    #根据关键词搜索文章，此函数用不到了
+    #根据关键词搜索文章，此函数作废
     def wx_search_article(self, k):
         article = Article.get_article_by_keyword(k)
         if article:
@@ -704,6 +730,11 @@ class WxParser(BaseHandler):
         return ''
 
     def wx_get_article_by_id(self, post_id):
+        k = 'wx_post_%s' % (str(post_id))
+        v = getMc(k)
+        if v:
+            return v
+
         article = Article.get_article_by_id_detail(post_id)
         if article:
             title = article.slug
@@ -722,6 +753,7 @@ class WxParser(BaseHandler):
                     }
                 articles_msg['articles'].append(article)
                 article = {}
+            setMc(k,articles_msg)
             return articles_msg
         return ''
 #yobin 20131023 for weixin end

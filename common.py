@@ -147,6 +147,8 @@ def clear_cache_by_pathlist(pathlist = []):
         try:
             mc = pylibmc.Client()
             mc.delete_multi([str(p) for p in pathlist])
+
+            clearWxMc()#yobin 20131024 clear weixin cache
         except:
             pass
 
@@ -409,10 +411,34 @@ def getAttr(keyname):
     except:
         return None
 
-def setAttr(keyname,value):
-    mc.set(keyname, value, COMMON_CACHE_TIME)
+def setAttr(keyname,value,cachetime = COMMON_CACHE_TIME):
+    mc.set(keyname, value, cachetime)
     kv.set(keyname, value)
 
+def getMc(keyname):
+    try:
+        value = mc.get(keyname)
+        return value
+    except:
+        return None
+
+def setMc(keyname,value,cachetime = COMMON_CACHE_TIME):
+    mc.set(keyname, value, cachetime)
+
+def clearWxMc():
+    if pathlist and MC_Available:
+        try:
+            from model import Category
+            cids = Category.get_all_cat_id()
+            print cids
+            #文章内容的cache就不清除了，麻烦。
+            #如果都要清除的话，clear all cache好了，毕竟只有一个人写博客
+            klist = ['wx_latest','wx_artlists','wx_cats',]
+            klist.append(cids)
+            print klist
+            mc.delete_multi(klist)
+        except:
+            pass
 
 #==============================================================================
 
