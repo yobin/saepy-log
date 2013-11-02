@@ -530,7 +530,7 @@ class WxParser(BaseHandler):
                     result = eval(result)
                     content = ' '.join(w["word"] for w in result)
 
-            cmd = content[0]
+            cmd = content[0].lower()
             if cmd == "n":
                 rsp = self.wx_get_latest_articles()
                 if rsp:

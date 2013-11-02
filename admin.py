@@ -29,14 +29,30 @@ if not debug:
 
 ######
 def put_obj2storage(file_name = '', data = '', expires='365', type=None, encoding= None, domain_name = STORAGE_DOMAIN_NAME):
-    bucket = Bucket('attachment')
-    bucket.put_object(file_name, data, content_type=type, content_encoding= encoding)
-    return bucket.generate_url(file_name)
-
-    s = sae.storage.Client()
-    ob = sae.storage.Object(data = data, cache_control='access plus %s day' % expires, content_type= type, content_encoding= encoding)
-    return s.put(domain_name, file_name, ob)
-
+    whichStorage = int(getAttr('DEFAULT_STORAGE'))
+    if whichStorage == 0:
+        bucket = Bucket(domain_name)
+        bucket.put_object(file_name, data, content_type=type, content_encoding= encoding)
+        return bucket.generate_url(file_name)
+    elif whichStorage == 1:
+        import qiniu.conf,qiniu.rs,qiniu.io
+        qiniu.conf.ACCESS_KEY = getAttr('QNKEY')
+        qiniu.conf.SECRET_KEY = getAttr('QNSECRET')
+        policy = qiniu.rs.PutPolicy(getAttr('QNSTORAGE'))
+        uptoken = policy.token()
+        key = file_name
+        if key[0] == "/":
+            key = key[1:]
+        ret, err = qiniu.io.put(uptoken, key, data)
+        if err is not None:
+            print 'err = ', err
+            return ''
+        ###下面返回的网址有可能不同，有的是 xxxx.u.qiniudn.com 请改为自己的
+        return "http://%s/%s" % (getAttr('QNDOMAIN'), key)
+    else:
+        #可后续扩展其他云存储
+        pass
+    return ''
 
 ######
 class HomePage(BaseHandler):
@@ -131,7 +147,7 @@ class FileUpload(BaseHandler):
             ###
 
             try:
-                attachment_url = put_obj2storage(file_name = new_file_name, data = myfile['body'], expires='365', type= mime_type, encoding= encoding)
+                attachment_url = put_obj2storage(file_name = str(new_file_name), data = myfile['body'], expires='365', type= mime_type, encoding= encoding)
             except:
                 attachment_url = ''
 
@@ -563,6 +579,61 @@ class BlogSetting3(BaseHandler):
         self.redirect('%s/admin/setting3'% (BASE_URL))
         return
 
+class StorageSetting(BaseHandler):
+    @authorized()
+    def get(self):
+        if not getAttr('DEFAULT_STORAGE'):
+            setAttr('DEFAULT_STORAGE',0)
+
+        if not getAttr('SAESTORAGE'):
+            setAttr('SAESTORAGE','')
+
+        if not getAttr('QNKEY'):
+            setAttr('QNKEY','')
+
+        if not getAttr('QNSECRET'):
+            setAttr('QNSECRET','')
+
+        if not getAttr('QNSTORAGE'):
+            setAttr('QNSTORAGE',STORAGE_DOMAIN_NAME)
+
+        if not getAttr('QNDOMAIN'):
+            setAttr('QNDOMAIN','')
+
+        self.echo('admin_storage.html', {
+            'title': "存储设置",
+            'defaultstorage':getAttr('DEFAULT_STORAGE'),
+            'saestorage':getAttr('SAESTORAGE'),
+            'qnkey':getAttr('QNKEY'),
+            'qnsecret':getAttr('QNSECRET'),
+            'qnstorage':getAttr('QNSTORAGE'),
+            'qndomain':getAttr('QNDOMAIN'),
+        },layout='_layout_admin.html')
+
+    @authorized()
+    def post(self):
+        DEFAULT_STORAGE = self.get_argument("defaultstorage",'')
+        setAttr('DEFAULT_STORAGE',int(DEFAULT_STORAGE))
+
+        SAESTORAGE = self.get_argument("saestorage",'')
+        setAttr('SAESTORAGE',SAESTORAGE)
+
+        QNKEY = self.get_argument("qnkey",'')
+        setAttr('QNKEY',QNKEY)
+
+        QNSECRET = self.get_argument("qnsecret",'')
+        setAttr('QNSECRET',QNSECRET)
+
+        QNSTORAGE = self.get_argument("qnstorage",'')
+        setAttr('QNSTORAGE',QNSTORAGE)
+
+        QNDOMAIN = self.get_argument("qndomain",'')
+        setAttr('QNDOMAIN',QNDOMAIN)
+
+        #clear_cache_by_pathlist(['/'])
+
+        self.redirect('%s/admin/storage'% (BASE_URL))
+        return
 
 class KVDBAdmin(BaseHandler):
     @authorized()
@@ -799,6 +870,7 @@ urls = [
     (r"/admin/setting", BlogSetting),
     #(r"/admin/setting2", BlogSetting2),
     (r"/admin/setting3", BlogSetting3),
+    (r"/admin/storage", StorageSetting),
     (r"/admin/moveblog", MovePost),
     (r"/admin/kvdb", KVDBAdmin),
     (r"/admin/markitup/preview", PostPrevewPage),

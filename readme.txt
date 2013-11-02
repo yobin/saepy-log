@@ -3,11 +3,11 @@
 对了，一些配置性的东西，我从setting.py中注掉了，改在admin后台自己配置了。
 
 
-下面是SAEpy-log原来的说明。
+下面参考了SAEpy-log原来的说明，并做了一些修改。
 
 SAEpy-log 是一款运行在SAE/python上轻型的、性能卓越的blog程序
 
-示例 http://saepy.sinaapp.com
+示例 http://yobin.sinaapp.com
 
 说明
 SAEpy-log 是 SAE python blog的简写，是学习使用SAE 的生成物。
@@ -30,7 +30,7 @@ AJAX表单
 缓存页面
 密码保护
 基于tag的相关文章
-附件上传
+附件上传（支持SAE Storage和七牛云存储，在管理面板里可以修改，默认支持的是SAE Storage）
 
 安装方法：
 1）下载最新源码；
@@ -39,7 +39,7 @@ AJAX表单
 4）到SAE 后台开通相关服务（mysql/Storage/Memcache/Task Queue）
 
 # 1 初始化 Mysql
-# 2 建立一个名为 attachment 的 Storage
+# 2 如果附件上传用的是SAE Storage的话，SAE上建立一个名为 attachment 的 Storage；
 # 3 启用Memcache，初始化大小为1M的 mc，大小可以调，日后文章多了，PV多了可增加
 # 4 创建一个 名为 default 的 Task Queue
 # 详见 http://saepy.sinaapp.com/t/50 详细安装指南
