@@ -612,7 +612,7 @@ class StorageSetting(BaseHandler):
 
     @authorized()
     def post(self):
-        DEFAULT_STORAGE = self.get_argument("defaultstorage",'')
+        DEFAULT_STORAGE = self.get_argument("defaultstorage",0)
         setAttr('DEFAULT_STORAGE',int(DEFAULT_STORAGE))
 
         SAESTORAGE = self.get_argument("saestorage",'')
