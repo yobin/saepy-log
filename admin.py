@@ -163,7 +163,6 @@ class FileUpload(BaseHandler):
         self.write(json.dumps(rspd))
         return
 
-
 class PostPrevewPage(BaseHandler):
     @authorized()
     def get(self):
@@ -208,6 +207,9 @@ class AddPost(BaseHandler):
                 'edit_time': timestamp,
                 'archive': genArchive(),
             }
+            if MYSQL_TO_KVDB_SUPPORT:
+                post_dic['comment_num'] = '0'
+
             if post_dic['tags']:
                 tagslist = set([x.strip() for x in post_dic['tags'].split(',')])
                 try:
@@ -286,12 +288,17 @@ class EditPost(BaseHandler):
                 'category': self.get_argument("cat"),
                 'title': self.get_argument("tit"),
                 'content': content,
-                'tags': self.get_argument("tag",'').replace(u'，',','),
+                'tags': self.get_argument("tag",'').replace(u'，',',').encode('utf-8'),
                 'closecomment': self.get_argument("clo",'false'),
                 'password': self.get_argument("password",''),
                 'edit_time': timestamp,
                 'id': id
             }
+
+            if MYSQL_TO_KVDB_SUPPORT:
+                post_dic['add_time'] = oldobj['add_time']
+                post_dic['archive'] = oldobj['archive']
+                post_dic['comment_num'] = oldobj['comment_num']
 
             if post_dic['tags']:
                 tagslist = set([x.strip() for x in post_dic['tags'].split(',')])
@@ -311,17 +318,22 @@ class EditPost(BaseHandler):
 
         postid = Article.update_post_edit(post_dic)
         if postid:
-            cache_key_list = ['/', 'post:%s'% id, 'cat:%s' % quoted_string(oldobj.category)]
-            if oldobj.category != post_dic['category']:
+            if MYSQL_TO_KVDB_SUPPORT:
+                oldobj_category = oldobj['category']
+                oldobj_tags     = oldobj['tags']
+            else:
+                oldobj_category = oldobj.category
+                oldobj_tags     = oldobj.tags
+            cache_key_list = ['/', 'post:%s'% id, 'cat:%s' % quoted_string(oldobj_category)]
+            if oldobj_category != post_dic['category']:
                 #cat changed
                 Category.add_postid_to_cat(post_dic['category'], str(postid))
-                Category.remove_postid_from_cat(oldobj.category, str(postid))
+                Category.remove_postid_from_cat(oldobj_category, str(postid))
                 cache_key_list.append('cat:%s' % quoted_string(post_dic['category']))
 
-
-            if oldobj.tags != post_dic['tags']:
+            if oldobj_tags != post_dic['tags']:
                 #tag changed
-                old_tags = set(oldobj.tags.split(','))
+                old_tags = set(oldobj_tags.split(','))
                 new_tags = set(post_dic['tags'].split(','))
 
                 removed_tags = old_tags - new_tags
@@ -347,20 +359,32 @@ class EditPost(BaseHandler):
 class DelPost(BaseHandler):
     @authorized()
     def get(self, id = ''):
-        try:
-            if id:
-                oldobj = Article.get_article_by_id_edit(id)
-                Category.remove_postid_from_cat(oldobj.category, str(id))
-                Archive.remove_postid_from_archive(oldobj.archive, str(id))
-                Tag.remove_postid_from_tags( set(oldobj.tags.split(','))  , str(id))
-                Article.del_post_by_id(id)
-                increment('Totalblog',NUM_SHARDS,-1)
-                cache_key_list = ['/', 'post:%s'% id, 'cat:%s' % quoted_string(oldobj.category)]
-                clear_cache_by_pathlist(cache_key_list)
-                clear_cache_by_pathlist(['post:%s'%id])
-                self.redirect('%s/admin/edit_post/'% (BASE_URL))
-        except:
-            pass
+        #try:
+        if id:
+            oldobj = Article.get_article_by_id_edit(id)
+            print 'DelPost()',oldobj
+            if not oldobj:
+                return
+            if MYSQL_TO_KVDB_SUPPORT:
+                oldobj_category = oldobj['category']
+                oldobj_archive = oldobj['archive']
+                oldobj_tags = oldobj['tags']
+            else:
+                oldobj_category = oldobj.category
+                oldobj_archive = oldobj.archive
+                oldobj_tags    = oldobj.tags
+
+            Category.remove_postid_from_cat(oldobj_category, str(id))
+            Archive.remove_postid_from_archive(oldobj_archive, str(id))
+            Tag.remove_postid_from_tags( set(oldobj_tags.split(','))  , str(id))
+            Article.del_post_by_id(id)
+            increment('Totalblog',NUM_SHARDS,-1)
+            cache_key_list = ['/', 'post:%s'% id, 'cat:%s' % quoted_string(oldobj_category)]
+            clear_cache_by_pathlist(cache_key_list)
+            clear_cache_by_pathlist(['post:%s'%id])
+            self.redirect('%s/admin/edit_post/'% (BASE_URL))
+        #except:
+        #    pass
 
 class EditComment(BaseHandler):
     @authorized()
@@ -372,13 +396,14 @@ class EditComment(BaseHandler):
                 act = self.get_argument("act",'')
                 if act == 'del':
                     Comment.del_comment_by_id(id)
-                    clear_cache_by_pathlist(['post:%d'%obj.postid])
+                    if MYSQL_TO_KVDB_SUPPORT:
+                        clear_cache_by_pathlist(['post:%d'%obj['postid']])
+                    else:
+                        clear_cache_by_pathlist(['post:%d'%obj.postid])
                     self.redirect('%s/admin/comment/'% (BASE_URL))
                     return
         self.echo('admin_comment.html', {
             'title': "管理评论",
-            'cats': Category.get_all_cat_name(),
-            'tags': Tag.get_all_tag_name(),
             'obj': obj,
             'comments': Comment.get_recent_comments(ADMIN_RECENT_COMMENT_NUM),
         },layout='_layout_admin.html')
@@ -561,6 +586,7 @@ class BlogSetting3(BaseHandler):
             'ANALYTICS_CODE':getAttr('ANALYTICS_CODE'),
             'ADSENSE_CODE1':getAttr('ADSENSE_CODE1'),
             'ADSENSE_CODE2':getAttr('ADSENSE_CODE2'),
+            'ADSENSE_CODE3':getAttr('ADSENSE_CODE3'),
         },layout='_layout_admin.html')
 
     @authorized()
@@ -574,6 +600,8 @@ class BlogSetting3(BaseHandler):
         ADSENSE_CODE2 = self.get_argument("ADSENSE_CODE2",'')
         setAttr('ADSENSE_CODE2',ADSENSE_CODE2)
 
+        ADSENSE_CODE3 = self.get_argument("ADSENSE_CODE3",'')
+        setAttr('ADSENSE_CODE3',ADSENSE_CODE3)
         clear_cache_by_pathlist(['/'])
 
         self.redirect('%s/admin/setting3'% (BASE_URL))
@@ -640,12 +668,53 @@ class KVDBAdmin(BaseHandler):
     def get(self):
         self.echo('admin_kvdb.html', {
             'title': "KVDB面板",
+            'key': '',
+            'obj': '',
         },layout='_layout_admin.html')
 
     @authorized()
     def post(self):
+        key = self.get_argument("key",'')
+        self.echo('admin_kvdb.html', {
+            'title': "KVDB面板",
+            'key': key,
+            'obj': decode_special_txt(getkv(key)),
+        },layout='_layout_admin.html')
+
+class KVDBSave(BaseHandler):
+    @authorized()
+    def post(self):
+        k = self.get_argument("key",'')
+        v = self.get_argument("content",'')
+        if k and v:
+            setkv(k,encode_special_txt(v))
         self.redirect('%s/admin/kvdb'% (BASE_URL))
-        return
+
+class KVDBDel(BaseHandler):
+    @authorized()
+    def post(self):
+        k = self.get_argument("key",'')
+        if k :
+            delkv(k)
+        self.redirect('%s/admin/kvdb'% (BASE_URL))
+
+class KVDBDownload(BaseHandler):
+    @authorized()
+    def post(self):
+        import cStringIO as StringIO
+        import gzip
+
+        k = self.get_argument("key",'')
+        if k :
+            filename = 'kvdb_%s.zip' % (k)
+            self.set_header('Content-Type','application/zip')
+            self.set_header('Content-Disposition',"attachment;filename=%s;charset=utf-8" % filename)
+
+            buf = StringIO.StringIO()
+            f=gzip.GzipFile(mode="w", fileobj=buf)
+            f.write(decode_special_txt(getkv(k).encode('utf-8')))
+            f.close()
+            return self.write(buf.getvalue())
 
 class FlushData(BaseHandler):
     @authorized()
@@ -850,8 +919,119 @@ class MovePost(BaseHandler):
             self.write(json.dumps(rspd))
             return
 
+#MYSQL_TO_KVDB_SUPPORT
+class SetArches(BaseHandler):
+    def post(self, secret = ''):
+        arches = self.get_argument("arches",''),
+        if arches and secret:
+            if secret == getAttr('MOVE_SECRET'):
+                Archive.set_arches(encode_special_txt(arches[0]))
+                return self.write('1')
+        return self.write('0')
+
+class SetTags(BaseHandler):
+    def post(self, secret = ''):
+        tags = self.get_argument("tags",''),
+        if tags and secret:
+            if secret == getAttr('MOVE_SECRET'):
+                Tag.set_tags(encode_special_txt(tags[0]))
+                return self.write('1')
+        return self.write('0')
+
+class SetCats(BaseHandler):
+    def post(self, secret = ''):
+        cats = self.get_argument("cats",''),
+        if cats and secret:
+            if secret == getAttr('MOVE_SECRET'):
+                Category.set_cats(encode_special_txt(cats[0]))
+                return self.write('1')
+        return self.write('0')
+
+class SetComment(BaseHandler):
+    def post(self, secret = '', id = ''):
+        comment = self.get_argument("comment",''),
+        if id and comment and secret:
+            if secret == getAttr('MOVE_SECRET'):
+                Comment.set_comm(id,encode_special_txt(comment[0]))
+                return self.write('1')
+        return self.write('Fail')
+
+class SetComments(BaseHandler):
+    def post(self, secret = ''):
+        comments = self.get_argument("comments",''),
+        if comments and secret:
+            if secret == getAttr('MOVE_SECRET'):
+                Comment.set_comms(comments[0])
+                return self.write('1')
+        return self.write('Fail')
+
+class SetPcomm(BaseHandler):
+    def post(self, secret = ''):
+        pcomm = self.get_argument("pcomm",''),
+        if pcomm and secret:
+            if secret == getAttr('MOVE_SECRET'):
+                Comment.set_pcomm(encode_special_txt(pcomm[0]))
+                return self.write('1')
+        return self.write('Fail')
+
+class SetArticle(BaseHandler):
+    def post(self, secret = '', id = ''):
+        article = self.get_argument("article",''),
+        if id and article and secret:
+            if secret == getAttr('MOVE_SECRET'):
+                Article.set_article(id,encode_special_txt(article[0]))
+                return self.write('1')
+        return self.write('Fail')
+
+class SetArticles(BaseHandler):
+    def post(self, secret = ''):
+        articles = self.get_argument("articles",''),
+        if articles and secret:
+            if secret == getAttr('MOVE_SECRET'):
+                Article.set_articles(articles[0])
+                return self.write('1')
+        return self.write('Fail')
+
+class SetUser(BaseHandler):
+    def post(self, secret = ''):
+        data = self.get_argument("data",''),
+        if id and data and secret:
+            if secret == getAttr('MOVE_SECRET'):
+                User.set_user(encode_special_txt(data[0]))
+                return self.write('1')
+        return self.write('Fail')
+
+class SetLink(BaseHandler):
+    def post(self, secret = ''):
+        data = self.get_argument("data",''),
+        if id and data and secret:
+            if secret == getAttr('MOVE_SECRET'):
+                Link.set_link(encode_special_txt(data[0]))
+                return self.write('1')
+        return self.write('Fail')
+
 #####
-urls = [
+if MYSQL_TO_KVDB_SUPPORT:
+    urls = [
+    (r"/admin/kv/setarches/(.*?)/", SetArches),
+    (r"/admin/kv/settags/(.*?)/", SetTags),
+    (r"/admin/kv/setcats/(.*?)/", SetCats),
+    (r"/admin/kv/setpcomm/(.*?)/", SetPcomm),
+    (r"/admin/kv/setcomments/(.*?)/", SetComments),
+    (r"/admin/kv/setcomment/(.*?)/(.*?)/", SetComment),
+    (r"/admin/kv/setarticles/(.*?)/", SetArticles),
+    (r"/admin/kv/setarticle/(.*?)/(.*?)/", SetArticle),
+    (r"/admin/kv/setuser/(.*?)/", SetUser),
+    (r"/admin/kv/setlink/(.*?)/", SetLink),
+    (r"/admin/kvdb$", KVDBAdmin),
+    (r"/admin/kvdb/save/", KVDBSave),
+    (r"/admin/kvdb/del/", KVDBDel),
+    (r"/admin/kvdb/download/", KVDBDownload),
+    ]
+else:
+    urls = []
+
+urls += [
     (r"/admin/", HomePage),
     (r"/admin/login", Login),
     (r"/admin/logout", Logout),
@@ -871,8 +1051,7 @@ urls = [
     #(r"/admin/setting2", BlogSetting2),
     (r"/admin/setting3", BlogSetting3),
     (r"/admin/storage", StorageSetting),
-    (r"/admin/moveblog", MovePost),
-    (r"/admin/kvdb", KVDBAdmin),
+    #(r"/admin/moveblog", MovePost),
     (r"/admin/markitup/preview", PostPrevewPage),
     (r".*", NotFoundPage)
 ]

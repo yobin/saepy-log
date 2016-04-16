@@ -6,6 +6,17 @@ YBLOG_VERSION = '20120721' # 当前版本
 APP_NAME = environ.get("APP_NAME", "")
 debug = not APP_NAME
 
+#Mysql收费太贵，用kvdb代替MySql，思路是尽量只改model和少量template，尽量不修改之前逻辑
+MYSQL_TO_KVDB_SUPPORT = True
+#迁移说明
+#1.备份数据，登录SAE后台，备份sp_archive,sp_category,sp_links,sp_posts,sp_tags,sp_user
+#  备份的格式为yml，如果博客多大话记得勾选转储所有行，压缩导出
+#2. 先把MYSQL_TO_KVDB_SUPPORT 设置为True
+#3. 运行tools目录下的mysql2kv，直至完成。观察有没有出错，如果出错可能要改一下脚本。
+#4. 登录SAE或者博客后台，清除缓存，自测博客。
+#5. 在SAE后台上彻底关闭Mysql并清除Mysql数据
+#6. 如发现问题，可与我(yyobin#gmail.com)邮件联系，我会尽快修正bug。
+
 ##下面需要修改
 #SITE_TITLE = u"" #博客标题
 #SITE_TITLE2 = u"" #显示在边栏上头（有些模板用不到）
@@ -26,6 +37,7 @@ debug = not APP_NAME
 #ANALYTICS_CODE = """"""
 #ADSENSE_CODE1 = """"""
 #ADSENSE_CODE2 = """"""
+#ADSENSE_CODE3 = """"""
 
 #使用SAE Storage 服务（保存上传的附件），需在SAE管理面板创建
 STORAGE_DOMAIN_NAME = 'attachment'
@@ -42,7 +54,10 @@ MAJOR_DOMAIN = '%s.sinaapp.com' % APP_NAME #主域名，默认是SAE 的二级�
 ##你也可以把自己喜欢的wp主题移植过来，或者修改default或者octopress-disqus
 #制作方法参见 http://saepy.sinaapp.com/t/49
 #以后要在博客设置里设置为皮肤可换
-THEME = 'octopress'
+if MYSQL_TO_KVDB_SUPPORT:
+    THEME = ['octopress-kv','admin-kv']
+else:
+    THEME = ['octopress','admin']
 
 #使用disqus 评论系统，如果你使用就填 website shortname，
 #申请地址 http://disqus.com/

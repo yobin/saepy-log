@@ -1,0 +1,39 @@
+<h2>#{title}</h2>
+
+<script type="text/javascript">
+    function delConfirm()
+    {
+        var se=confirm('确认删除吗?');
+        if (se==true)
+        {
+            alert('删除成功!');
+            action='/admin/kvdb/del/';
+            form1.submit();
+        }
+    }
+</script>
+
+<?py if obj: ?>
+<form role="form1"   method="POST" action="">
+    <p>
+    key: <input type="text" name="key" value="#{key}" size="46" tabindex="3" /><br>
+    <p><textarea id="commentbox" name="content" cols="80" rows="30" tabindex="4">#{obj}</textarea></p>
+
+   <div class="box-footer">
+       <button type="submit" class="btn btn-primary" onclick="action='/admin/kvdb';form1.submit();">查询</button>
+       <button type="submit" class="btn btn-primary" onclick="alert('保存成功!');action='/admin/kvdb/save/';form1.submit();">保存</button>
+       <button type="submit" class="btn btn-primary" onclick="action='/admin/kvdb/del/';delConfirm();">删除</button>
+       <button type="submit" class="btn btn-primary" onclick="action='/admin/kvdb/download/';form1.submit();">下载</button>
+   </div>
+</form>
+
+<br />
+
+<?py else: ?>
+<form action="" method="post">
+<p>
+key: <input type="text" name="key" value="" size="46" tabindex="3" /><br>
+<input type="submit" class="bigbtn" tabindex="4" value=" Submit " /></p>
+</form>
+<br />
+<?py #endif ?>

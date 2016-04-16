@@ -26,8 +26,15 @@ class HomePage(BaseHandler):
             self.redirect('/install')
             return
         if objs:
-            fromid = objs[0].id
-            endid = objs[-1].id
+            if MYSQL_TO_KVDB_SUPPORT:
+                fromid = objs[0]['id']
+                endid = objs[-1]['id']
+                #totalblog = Article.get_totalnum_arti()
+                totalblog = get_count('Totalblog',NUM_SHARDS,0)
+            else:
+                fromid = objs[0].id
+                endid = objs[-1].id
+                totalblog = get_count('Totalblog',NUM_SHARDS,0)
         else:
             fromid = endid = ''
 
@@ -52,7 +59,7 @@ class HomePage(BaseHandler):
             'comments': Comment.get_recent_comments(),
             'links':Link.get_all_links(),
             'isauthor':self.isAuthor(),
-            'Totalblog':get_count('Totalblog',NUM_SHARDS,0),
+            'Totalblog':totalblog,
         },layout='_layout.html')
         self.write(output)
         return output
@@ -67,8 +74,12 @@ class IndexPage(BaseHandler):
         if objs:
             if direction == 'prev':
                 objs.reverse()
-            fromid = objs[0].id
-            endid = objs[-1].id
+            if MYSQL_TO_KVDB_SUPPORT:
+                fromid = objs[0]['id']
+                endid = objs[-1]['id']
+            else:
+                fromid = objs[0].id
+                endid = objs[-1].id
         else:
             fromid = endid = ''
 
@@ -102,7 +113,10 @@ class PostDetailShort(BaseHandler):
     def get(self, id = ''):
         obj = Article.get_article_by_id_simple(id)
         if obj:
-            self.redirect('%s/topic/%d/%s'% (BASE_URL, obj.id, obj.title), 301)
+            if MYSQL_TO_KVDB_SUPPORT:
+                self.redirect('%s/topic/%s/%s'% (BASE_URL, obj['id'], obj['title']), 301)
+            else:
+                self.redirect('%s/topic/%d/%s'% (BASE_URL, obj.id, obj.title), 301)
             return
         else:
             self.redirect(BASE_URL)
@@ -118,32 +132,52 @@ class PostDetail(BaseHandler):
         #redirect to right title
         try:
             title = unquote(title).decode('utf-8')
-        except:
-            pass
-        if title != obj.slug:
-            self.redirect(obj.absolute_url, 301)
+        except Exception , e:
+            print 'PostDetail()',e
+
+        if MYSQL_TO_KVDB_SUPPORT:
+            obj_slug = obj['slug']
+            obj_absolute_url = obj['absolute_url']
+            obj_password = obj['password']
+            obj_last_modified = obj['last_modified']
+            obj_title = obj['title']
+            obj_keywords = obj['keywords']
+            obj_description = obj['description']
+            obj_coms = obj['coms']
+        else:
+            obj_slug = obj.slug
+            obj_absolute_url = obj.absolute_url
+            obj_password = obj.password
+            obj_last_modified = obj.last_modified
+            obj_title = obj.title
+            obj_keywords = obj.keywords
+            obj_description = obj.description
+            obj_coms = obj.coms
+
+        if title != obj_slug:
+            self.redirect(obj_absolute_url, 301)
             return
         #
-        if obj.password and THEME == 'default':
+        if obj_password and THEME == 'default':
             rp = self.get_cookie("rp%s" % id, '')
-            if rp != obj.password:
+            if rp != obj_password:
                 tmpl = '_pw'
-        elif obj.password and BLOG_PSW_SUPPORT:
+        elif obj_password and BLOG_PSW_SUPPORT:
             rp = self.get_cookie("rp%s" % id, '')
-            print 'rp===%s' % (str(rp))
-            if rp != obj.password:
+            if rp != obj_password:
                 tmpl = '_pw'
 
         keyname = 'pv_%s' % (str(id))
-        increment(keyname)#yobin 20120701
+        increment(str(keyname))#yobin 20120701
         self.set_cookie(keyname, '1', path = "/", expires_days =1)
-        self.set_header("Last-Modified", obj.last_modified)
+        self.set_header("Last-Modified", obj_last_modified)
+
         output = self.render('page%s.html'%tmpl, {
-            'title': "%s - %s"%(obj.title, getAttr('SITE_TITLE')),
-            'keywords':obj.keywords,
-            'description':obj.description,
+            'title': "%s - %s"%(obj_title, getAttr('SITE_TITLE')),
+            'keywords':obj_keywords,
+            'description':obj_description,
             'obj': obj,
-            'cobjs': obj.coms,
+            'cobjs': obj_coms,
             'postdetail': 'postdetail',
             'cats': Category.get_all_cat_name(),
             'tags': Tag.get_hot_tag_name(),
@@ -159,9 +193,9 @@ class PostDetail(BaseHandler):
         },layout='_layout.html')
         self.write(output)
 
-        if obj.password and BLOG_PSW_SUPPORT:
+        if obj_password and BLOG_PSW_SUPPORT:
             return output
-        elif obj.password and THEME == 'default':
+        elif obj_password and THEME == 'default':
             return
         else:
             return output
@@ -177,11 +211,19 @@ class PostDetail(BaseHandler):
 
             pw = self.get_argument("pw",'')
             pobj = Article.get_article_by_id_simple(id)
+            if MYSQL_TO_KVDB_SUPPORT:
+                psw = pobj['password']
+                pobjid = pobj['id']
+                pobjtitle = pobj['title']
+            else:
+                psw = pobj.password
+                pobjid = pobj.id
+                pobjtitle = pobj.title
             wr = False
             if pw:
-                if pobj.password == pw:
+                if psw == pw:
                     clear_cache_by_pathlist(['post:%s'%id])#yobin 20120630
-                    self.set_cookie("rp%s" % id, pobj.password, path = "/", expires_days =1)
+                    self.set_cookie("rp%s" % id, psw, path = "/", expires_days =1)
                 else:
                     wr = True
             else:
@@ -189,8 +231,7 @@ class PostDetail(BaseHandler):
             if wr:
                 wrn = self.get_cookie("wrpw", '0')
                 self.set_cookie("wrpw", str(int(wrn)+1), path = "/", expires_days = 1 )
-
-            self.redirect('%s/topic/%d/%s'% (BASE_URL, pobj.id, pobj.title))
+            self.redirect('%s/topic/%d/%s'% (BASE_URL, pobjid, pobjtitle))
             return
 
         self.set_header('Content-Type','application/json')
@@ -238,10 +279,21 @@ class PostDetail(BaseHandler):
             return
 
         pobj = Article.get_article_by_id_simple(id)
-        if pobj and not pobj.closecomment:
+        if MYSQL_TO_KVDB_SUPPORT:
+            pclosecomment = pobj['closecomment']
+            pcomment_num  = int(pobj['comment_num'])
+            pobjid        = pobj['id']
+            pobjtitle     = pobj['title']
+        else:
+            pclosecomment = pobj.closecomment
+            pcomment_num  = pobj.comment_num
+            pobjid        = pobj.id
+            pobjtitle     = pobj.title
+
+        if pobj and not pclosecomment:
             cobjid = Comment.add_new_comment(post_dic)
             if cobjid:
-                Article.update_post_comment( pobj.comment_num+1, id)
+                Article.update_post_comment( int(pcomment_num)+1, id)
                 rspd['status'] = 200
                 #rspd['msg'] = '恭喜： 已成功提交评论'
 
@@ -268,16 +320,19 @@ class PostDetail(BaseHandler):
                             tolist = []
                         if post_dic['toid']:
                             tcomment = Comment.get_comment_by_id(toid)
-                            if tcomment and tcomment.email:
-                                tolist.append(tcomment.email)
-                        commenturl = "%s/t/%s#r%s" % (BASE_URL, str(pobj.id), str(cobjid))
-                        m_subject = u'有人回复您在 《%s》 里的评论 %s' % ( pobj.title,str(cobjid))
+                            if MYSQL_TO_KVDB_SUPPORT:
+                                if tcomment and tcomment['email']:
+                                    tolist.append(tcomment['email'])
+                            else:
+                                if tcomment and tcomment.email:
+                                    tolist.append(tcomment.email)
+                        commenturl = "%s/t/%s#r%s" % (BASE_URL, str(pobjid), str(cobjid))
+                        m_subject = u'有人回复您在 《%s》 里的评论 %s' % ( pobjtitle,str(cobjid))
                         m_html = u'这是一封提醒邮件（请勿直接回复）： %s ，请尽快处理： %s' % (m_subject, commenturl)
 
                         if tolist:
                             import sae.mail
                             sae.mail.send_mail(','.join(tolist), m_subject, m_html,(getAttr('MAIL_SMTP'), int(getAttr('MAIL_PORT')), getAttr('MAIL_FROM'), getAttr('MAIL_PASSWORD'), True))
-
                     except:
                         pass
             else:
@@ -291,7 +346,10 @@ class CategoryDetailShort(BaseHandler):
     def get(self, id = ''):
         obj = Category.get_cat_by_id(id)
         if obj:
-            self.redirect('%s/category/%s'% (BASE_URL, obj.name), 301)
+            if MYSQL_TO_KVDB_SUPPORT:
+                self.redirect('%s/category/%s/'% (BASE_URL, str(obj[1])), 301)
+            else:
+                self.redirect('%s/category/%s/'% (BASE_URL, obj.name), 301)
             return
         else:
             self.redirect(BASE_URL)
@@ -302,20 +360,21 @@ class CategoryDetail(BaseHandler):
         objs = Category.get_cat_page_posts(name, 1)
 
         catobj = Category.get_cat_by_name(name)
-        if catobj:
-            pass
-        else:
+        if not catobj:
             self.redirect(BASE_URL)
             return
 
-        allpost =  catobj.id_num
+        if MYSQL_TO_KVDB_SUPPORT:
+            allpost =  len(catobj.split(','))
+        else:
+            allpost =  catobj.id_num
         allpage = allpost/EACH_PAGE_POST_NUM
         if allpost%EACH_PAGE_POST_NUM:
             allpage += 1
 
         output = self.render('index.html', {
-            'title': "%s - %s"%( catobj.name, getAttr('SITE_TITLE')),
-            'keywords':catobj.name,
+            'title': "%s - %s"%( name, getAttr('SITE_TITLE')),
+            'keywords':name,
             'description':getAttr('SITE_DECR'),
             'objs': objs,
             'cats': Category.get_all_cat_name(),
@@ -339,26 +398,24 @@ class ArchiveDetail(BaseHandler):
     #@pagecache('cat', PAGE_CACHE_TIME, lambda self,name: name)
     def get(self, name = ''):
         if not name:
-            print 'ArchiveDetail name null'
             name = Archive.get_latest_archive_name()
-
         objs = Archive.get_archive_page_posts(name, 1)
-
         archiveobj = Archive.get_archive_by_name(name)
         if archiveobj:
-            pass
+            if MYSQL_TO_KVDB_SUPPORT:
+                allpost  = len(archiveobj.split(','))
+            else:
+                allpost  = archiveobj.id_num
         else:
-            self.redirect(BASE_URL)
-            return
+            return self.redirect(BASE_URL)
 
-        allpost =  archiveobj.id_num
         allpage = allpost/EACH_PAGE_POST_NUM
         if allpost%EACH_PAGE_POST_NUM:
             allpage += 1
 
         output = self.render('index.html', {
-            'title': "%s - %s"%( archiveobj.name, getAttr('SITE_TITLE')),
-            'keywords':archiveobj.name,
+            'title': "%s - %s"%( name, getAttr('SITE_TITLE')),
+            'keywords':name,
             'description':getAttr('SITE_DECR'),
             'objs': objs,
             'cats': Category.get_all_cat_name(),
@@ -382,22 +439,23 @@ class TagDetail(BaseHandler):
     @pagecache()
     def get(self, name = ''):
         objs = Tag.get_tag_page_posts(name, 1)
-
         catobj = Tag.get_tag_by_name(name)
-        if catobj:
-            pass
-        else:
+        if not catobj:
             self.redirect(BASE_URL)
             return
 
-        allpost =  catobj.id_num
+        if MYSQL_TO_KVDB_SUPPORT:
+            allpost =  len(catobj.split(','))
+        else:
+            allpost =  catobj.id_num
+
         allpage = allpost/EACH_PAGE_POST_NUM
         if allpost%EACH_PAGE_POST_NUM:
             allpage += 1
 
         output = self.render('index.html', {
-            'title': "%s - %s"%( catobj.name, getAttr('SITE_TITLE')),
-            'keywords':catobj.name,
+            'title': "%s - %s"%( name, getAttr('SITE_TITLE')),
+            'keywords':name,
             'description':getAttr('SITE_DECR'),
             'objs': objs,
             'cats': Category.get_all_cat_name(),
@@ -416,7 +474,6 @@ class TagDetail(BaseHandler):
         self.write(output)
         return output
 
-
 class ArticleList(BaseHandler):
     @pagecache('post_list_tag', PAGE_CACHE_TIME, lambda self,listtype,direction,page,name: "%s_%s"%(name,page))
     def get(self, listtype = '', direction = 'next', page = '1', name = ''):
@@ -430,20 +487,23 @@ class ArticleList(BaseHandler):
             objs = Archive.get_archive_page_posts(name, page)
             catobj = Archive.get_archive_by_name(name)
         #
-        if catobj:
-            pass
-        else:
-            self.redirect(BASE_URL)
-            return
+        if not catobj:
+            return self.redirect(BASE_URL)
 
-        allpost =  catobj.id_num
+        if not objs:
+            return self.redirect(BASE_URL)
+
+        if MYSQL_TO_KVDB_SUPPORT:
+            allpost =  len(catobj.split(','))
+        else:
+            allpost =  catobj.id_num
         allpage = allpost/EACH_PAGE_POST_NUM
         if allpost%EACH_PAGE_POST_NUM:
             allpage += 1
 
         output = self.render('index.html', {
-            'title': "%s - %s | Part %s"%( catobj.name, getAttr('SITE_TITLE'), page),
-            'keywords':catobj.name,
+            'title': "%s - %s | Part %s"%( name, getAttr('SITE_TITLE'), page),
+            'keywords':name,
             'description':getAttr('SITE_DECR'),
             'objs': objs,
             'cats': Category.get_all_cat_name(),
@@ -461,7 +521,6 @@ class ArticleList(BaseHandler):
         },layout='_layout.html')
         self.write(output)
         return output
-
 
 class Robots(BaseHandler):
     def get(self):
@@ -510,12 +569,8 @@ class WxParser(BaseHandler):
         weixin = WeiXin.on_message(body)
         mydict = weixin.to_json()
 
-        print "mydict['MsgType'] = %s" % (mydict['MsgType'])
-
         if mydict['MsgType'] == 'text':
             content = mydict['Content'].encode('utf-8')
-            print 'content = %s' % (content)
-
             help = self.get_help_menu()
             reply = ""
 
@@ -581,7 +636,7 @@ class WxParser(BaseHandler):
             pass
             #wx_handle_link(mydict['Title'],mydict['Description'],mydict['Url'])
         elif mydict['MsgType'] == 'event':
-            print "mydict['Event'] = %s" % (mydict['Event'])
+            #print "mydict['Event'] = %s" % (mydict['Event'])
             if 'subscribe' == mydict['Event']:
                 reply = weixin.to_xml(to_user_name=mydict['FromUserName'],
                             from_user_name=mydict['ToUserName'],
@@ -655,13 +710,17 @@ class WxParser(BaseHandler):
         article_list = Article.get_articles_list()
         article_list_str = "最新文章列表供您点阅，回复v+数字即可阅读: \n"
         for i in range(len(article_list)):
-            art_id = str(article_list[i].id)
-            art_title = article_list[i].title
+            if MYSQL_TO_KVDB_SUPPORT:
+                art_id = str(article_list[i]['id'])
+                art_title = article_list[i]['title']
+                art_category = article_list[i]['category']
+            else:
+                art_id = str(article_list[i].id)
+                art_title = article_list[i].title
+                art_category = article_list[i].category
             art_title = tornado.escape.native_str(art_title)
-            art_category = article_list[i].category
             art_category = tornado.escape.native_str(art_category)
             article_list_str +=  art_id + ' ' + art_title + ' ' + art_category + '\n'
-
         setMc(k,article_list_str)
         return article_list_str
 
@@ -674,8 +733,11 @@ class WxParser(BaseHandler):
 
         cat_list = Category.get_all_cat_name()
         catstr = "分类列表如下，回复c+数字，即可获取该分类文章：\n"
-        mylist = ["%d %s" % (int(cat.id),(cat.name).encode('utf-8')) for cat in cat_list]
-        mylist.reverse()
+        if MYSQL_TO_KVDB_SUPPORT:
+            mylist = ["%d %s" % (loop,(cat[0]).encode('utf-8')) for loop,cat in enumerate(sorted(cat_list))]
+        else:
+            mylist = ["%d %s" % (int(cat.id),(cat.name).encode('utf-8')) for cat in cat_list]
+            mylist.reverse()
         catstr += "\n".join(mylist)
 
         setMc(k,catstr)
@@ -693,7 +755,10 @@ class WxParser(BaseHandler):
             articles_msg = {'articles':[]}
             for obj in article_list:
                 slug        = slugfy(obj['title'])
-                desc        = HTML_REG.sub('',obj.content[:DESCRIPTION_CUT_WORDS])
+                if MYSQL_TO_KVDB_SUPPORT:
+                    desc        = HTML_REG.sub('',obj['content'][:DESCRIPTION_CUT_WORDS])
+                else:
+                    desc        = HTML_REG.sub('',obj.content[:DESCRIPTION_CUT_WORDS])
                 shorten_url = '%s/t/%s' % (BASE_URL, obj['id'])
                 article = {
                         'title': slug,
@@ -711,10 +776,16 @@ class WxParser(BaseHandler):
     def wx_search_article(self, k):
         article = Article.get_article_by_keyword(k)
         if article:
-            title = article.slug
-            description = article.description
+            if MYSQL_TO_KVDB_SUPPORT:
+                title = article['slug']
+                description = article['description']
+                url = article['absolute_url']
+            else:
+                title = article.slug
+                description = article.description
+                url = article.absolute_url
+
             picUrl = WX_DEFAULT_PIC
-            url = article.absolute_url
             count = 1
             articles_msg = {'articles':[]}
             for i in range(0,count):
@@ -737,10 +808,15 @@ class WxParser(BaseHandler):
 
         article = Article.get_article_by_id_detail(post_id)
         if article:
-            title = article.slug
-            description = article.description
+            if MYSQL_TO_KVDB_SUPPORT:
+                title = article['slug']
+                description = article['description']
+                url = article['absolute_url']
+            else:
+                title = article.slug
+                description = article.description
+                url = article.absolute_url
             picUrl = WX_DEFAULT_PIC
-            url = article.absolute_url
             count = 1
 
             articles_msg = {'articles':[]}
@@ -777,4 +853,3 @@ urls = [
     (r"/attachment/(.+)$", Attachment),
     (r"/wx",WxParser),
 ]
-

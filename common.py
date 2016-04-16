@@ -30,6 +30,95 @@ if PAGE_CACHE:
     except:
         pass
 
+#MYSQL_TO_KVDB_SUPPORT begin
+#对kvdb的封装
+def getkv(k):
+    obj = None
+    if k:
+        try:
+            obj = mc.get(str(k))
+        except Exception,e:
+            print 'getkv(%s) exception111=%s' % (str(k),e)
+        try:
+            if not obj:
+                obj = kv.get(str(k))
+                if obj:
+                    mc.set(str(k),obj)
+        except Exception,e:
+            print 'getkv(%s) exception222=%s' % (str(k),e)
+    return obj
+
+def setkv(k,v):
+    if k and v:
+        try:
+            mc.set(str(k),v)
+            if kv.set(str(k),v):
+                #print '[KVDB] set %s OK' % (k)
+                return True
+        except Exception,e:
+            print 'setkv(%s) exception=%s' % (str(k),e)
+    return False
+
+def delkv(k):
+    if k:
+        try:
+            mc.delete(str(k))
+            kv.delete(str(k))
+            #print '[KVDB] del %s OK' % (k)
+            return True
+        except Exception,e:
+            print 'delkv(%s) exception=%s' % (str(k),e)
+    return False
+
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
+
+def dict2utf8(my_dict):
+    newdict = {}
+    for k in my_dict:
+        newdict[str(k)] = str(my_dict[k]).encode('utf-8')
+    return newdict
+
+def decode_special_txt(mystr):
+    if not mystr:
+        return mystr
+    return str(mystr).replace("\x1e","#@$").replace("\x1f","+=-").replace("\x1a","*@#")
+
+def encode_special_txt(mystr):
+    if not mystr:
+        return mystr
+    return str(mystr).replace("#@$","\x1e").replace("+=-","\x1f").replace("*@#","\x1a")
+
+def encode_dict(my_dict):
+    newdict = {}
+    for k in my_dict:
+        newdict[str(k)] = my_dict[k].encode('utf-8') if isinstance(my_dict[k], unicode) else str(my_dict[k])
+    return "\x1e".join("%s\x1f%s" % x for x in newdict.iteritems())
+
+def decode_dict(my_string):
+    return dict(x.split("\x1f") for x in my_string.split("\x1e"))
+
+# 编码list
+def encode_list(my_list):
+    return "\x1e".join(str(x).encode('utf-8') for x in my_list)
+
+# 解码list
+def decode_list(my_string):
+    return list(my_string.split("\x1e"))
+
+# 编码dictlist
+def encode_dictlist(my_list):
+    return "\x1a".join(encode_dict(x) for x in my_list)
+
+# 解码dictlist
+def decode_dictlist(my_string):
+    tmplist = []
+    for item in my_string.split("\x1a"):
+        tmplist.append(decode_dict(item))
+    return tmplist
+#MYSQL_TO_KVDB_SUPPORT end
+
 #####
 def slugfy(text, separator='-'):
     text = text.lower()
@@ -103,10 +192,10 @@ def genArchive():
 
 # get time_from_now
 def timestamp_to_datetime(timestamp):
-    return datetime.fromtimestamp(timestamp)
+    return datetime.fromtimestamp(int(timestamp))
 
 def time_from_now(time):
-    return datetime.fromtimestamp(time).strftime("%Y-%m-%d %H:%M:%S")
+    return datetime.fromtimestamp(int(time)).strftime("%Y-%m-%d %H:%M:%S")
     if isinstance(time, int):
         time = timestamp_to_datetime(time)
 
@@ -258,7 +347,7 @@ def pagecache(key="", time=PAGE_CACHE_TIME, key_suffix_calc_func=None):
     return _decorate
 
 ###
-engine = tenjin.Engine(path=[os.path.join('templates', theme) for theme in [THEME,'admin']] + ['templates'], cache=tenjin.MemoryCacheStorage(), preprocess=True)
+engine = tenjin.Engine(path=[os.path.join('templates', theme) for theme in THEME] + ['templates'], cache=tenjin.MemoryCacheStorage(), preprocess=True)
 class BaseHandler(tornado.web.RequestHandler):
 
     def render(self, template, context=None, globals=None, layout=False):
@@ -344,7 +433,7 @@ def get_count(keyname,num_shards=NUM_SHARDS,value=1):
             shard_name = "%s:%s" % (str(keyname),str(index))
             count = kv.get(shard_name)
             if count:
-                total += count
+                total += int(count)
     else:
         total = kv.get(keyname)
         if total is None:
@@ -365,7 +454,7 @@ def set_count(keyname,num_shards=NUM_SHARDS,value=1):
             shard_name = "%s:%s" % (str(keyname),str(index))
             count = kv.get(shard_name)
             if count:
-                total += count
+                total += int(count)
     else:
         kv.set(keyname, value)
 
@@ -381,13 +470,13 @@ def increment(keyname,num_shards=NUM_SHARDS,value=1):
         count = kv.get(shard_name)
         if count is None:
             count = 0
-        count += value
+        count = int(count) + int(value)
         kv.set(shard_name, count)
     else:
         count = kv.get(keyname)
         if count is None:
             count = 0
-        count += value
+        count = int(count) + int(value)
         kv.set(keyname, count)
     return count
 

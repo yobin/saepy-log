@@ -115,7 +115,7 @@ class WeiXin(object):
                     <Content><![CDATA[%s]]></Content>
                     <FuncFlag>0</FuncFlag>
                     </xml>'''
-        text_tpl = text_tpl % (post_msg['FromUserName'],post_msg['ToUserName'],str(int(time())),'text',response_msg)
+        text_tpl = text_tpl % (str(post_msg['FromUserName']),str(post_msg['ToUserName']),str(int(time())),'text',str(response_msg))
         # 调换发送者和接收者，然后填入需要返回的信息到xml中
         return text_tpl
 
@@ -131,8 +131,11 @@ class WeiXin(object):
                      </item>'''
         # 在这里对aticle进行包装
         for i in range(0, len(response_msg['articles']) ):
-            articles  += article_tpl % (response_msg['articles'][i]['title'],response_msg['articles'][i]['description'],
-                response_msg['articles'][i]['picUrl'],response_msg['articles'][i]['url'])		# 连接
+            articles  += article_tpl % (str(response_msg['articles'][i]['title']),
+                                        str(response_msg['articles'][i]['description']),
+                                        str(response_msg['articles'][i]['picUrl']),
+                                        str(response_msg['articles'][i]['url']))		# 连接
+
         # 将在article里面插入若干个item
         news_tpl = '''<xml>
                      <ToUserName><![CDATA[%s]]></ToUserName>

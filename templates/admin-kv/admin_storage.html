@@ -1,0 +1,29 @@
+<h2>#{title}</h2>
+
+<form action="" method="post">
+<p>
+选用附件存储空间：<br>
+<?py if int(defaultstorage) == 0: ?>
+<input type="radio" id="optionsRadios1" name="defaultstorage" value="0" checked> SAE Storage
+<input type="radio" id="optionsRadios2" name="defaultstorage" value="1"> 七牛
+<?py else: ?>
+<input type="radio" id="optionsRadios1" name="defaultstorage" value="0"> SAE Storage
+<input type="radio" id="optionsRadios2" name="defaultstorage" value="1" checked> 七牛
+<?py #endif ?>
+<br>
+<br>
+SAE Storage设置<br>
+bucket：<input type="text" name="saestorage" value="#{saestorage}" size="46" tabindex="3" /><br>
+<br>
+<br>
+七牛设置<br>
+ACCESS_KEY：<input type="text" name="qnkey" value="#{qnkey}" size="46" tabindex="3" /><br>
+SECRET_KEY：<input type="text" name="qnsecret" value="#{qnsecret}" size="46" tabindex="3" /><br>
+bucket：<input type="text" name="qnstorage" value="#{qnstorage}" size="46" tabindex="3" /><br>
+域名名称(如***.u.qiniudn.com，***.qiniudn.com，根据七牛上对应地填)：<br>
+<input type="text" name="qndomain" value="#{qndomain}" size="46" tabindex="3" /><br>
+<br>
+<input type="submit" class="bigbtn" tabindex="4" value=" Submit " /></p>
+</form>
+<br />
+

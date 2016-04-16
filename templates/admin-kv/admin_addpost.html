@@ -1,0 +1,186 @@
+<!-- rich editer -->
+<script type="text/javascript" src="#{JQUERY}"></script>
+<link rel="stylesheet" type="text/css" href="/static/markitup/skins/simple/style.css" />
+
+<?py if getAttr('MARKDOWN'): ?>
+<link rel="stylesheet" type="text/css" href="/static/markitup/sets/markdown/style.css" />
+<script type="text/javascript" src="/static/markitup/jquery.markitup.js"></script>
+<script type="text/javascript" src="/static/markitup/sets/markdown/set.js"></script>
+<?py else: ?>
+<script type="text/javascript" src="/static/markitup/jquery.markitup.js"></script>
+<script type="text/javascript" src="/static/markitup/sets/html/set.js"></script>
+<link rel="stylesheet" type="text/css" href="/static/markitup/sets/html/style.css" />
+<?py #endif ?>
+<script type="text/javascript">
+<!--
+$(document).ready(function()    {
+<?py if getAttr('MARKDOWN'): ?>
+    myMarkdownSettings.previewParserPath =  '/admin/markitup/preview';
+    $('#html').markItUp(myMarkdownSettings);
+<?py else: ?>
+    // Add markItUp! to your textarea in one line
+    $('#html').markItUp(myHtmlSettings);
+<?py #endif ?>
+});
+-->
+</script>
+
+<!-- rich editer end -->
+
+<!-- facebox -->
+<link href="/static/facefiles/facebox.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="/static/facefiles/facebox.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+    jQuery(document).ready(function($) {
+      $('a[rel*=facebox]').facebox()
+      //$('a[rel*=facebox]').click();
+    })
+</script>
+
+<!-- /facebox -->
+
+<?py use_default_theme = ('default' == THEME) ?>
+
+<span id="h"></span>
+<h2>#{title}</h2>
+<p id="text" style="color:red;"></p>
+
+<p>*分类: <input type="text" id="cat" style="width:150px;" value="" tabindex="1" /> 17s <a href="#catdiv" rel="facebox[.thickstyle]">从已有分类中选择</a></p>
+
+<p>*标题: <input type="text" id="tit" style="width:430px;" value="" tabindex="2" /> 100s</p>
+<textarea id="html" name="con" style="width:500px;height:300px;" tabindex="3"></textarea>
+
+<?py if use_default_theme: ?>
+图片最宽显示496px |
+<?py #endif ?>
+
+上传图片或附件 <input id="filetoupload" type="file" size="45" name="filetoupload" class="input">
+<p>标签: <input type="text" id="tag" style="width:360px;" value="" tabindex="4" /> 100s 用逗号分隔','<br/>
+<a href="#tagdiv" rel="facebox[.thickstyle]">从最近标签中选择</a>
+</p>
+<p>
+<label>关闭评论 <input type="checkbox" value="True" tabindex="5" /></label>
+
+<!--use_default_theme-->
+<?py if 1: ?>
+ | 设置阅读密码: <input type="text" id="password" style="width:150px;" value="" tabindex="6" /> 8s
+<?py else: ?>
+<input type='hidden' value='' id="password" />
+<?py #endif ?>
+
+</p>
+<p><button id="submit" class="bigbtn"> 提交文章 </button></p>
+
+<script>
+$('#submit').click(function(){
+
+    var cat = $('#cat').val().replace(/(^\s*)|(\s*$)/g,"");
+    var tit = $('#tit').val().replace(/(^\s*)|(\s*$)/g,"");
+    var con = $('#html').val().replace(/(^\s*)|(\s*$)/g,"");
+    var tag = $('#tag').val().replace(/(^\s*)|(\s*$)/g,"");
+    var password = $('#password').val().replace(/(^\s*)|(\s*$)/g,"");
+
+    var t = $('#text');
+
+    if(cat.length< 1 || cat.length > 17){
+        $('#cat').focus();
+        t.html("分类 必填 且最多可填17个字符");
+        return;
+    }
+
+    if(tit.length< 1 || tit.length > 100){
+        $('#tit').focus();
+        t.html("标题 必填 且最多可填100个字符");
+        return;
+    }
+
+    if(con.length< 1){
+        document.getElementsByTagName('textarea')[0].focus();
+        t.html("内容 必填");
+        return;
+    }
+
+    if(tag.length > 100){
+        $('#tag').focus();
+        t.html("标签最多可填100个字符");
+        return;
+    }
+
+    if(password.length > 8){
+        $('#password').focus();
+        t.html("密码最多可设8个字符");
+        return;
+    }
+
+    $('#submit').attr('disabled', 'disabled');
+    t.html("Sending now.....");
+
+    $.ajax({
+        type: 'POST',
+        url: '#{request.path}',
+        dataType: "json",
+        data: {'cat': cat, 'clo': $('#clo').is(":checked"), 'tit': tit, 'con': con, 'tag': tag, 'password': password},
+        success: function(data){
+            t.html(data.status + ": "+ data.msg);
+            $('#submit').removeAttr("disabled");
+            scroll(0,$("#h").position().top);
+        }
+    });
+});
+
+function setcat(cat){
+    var catField = document.getElementById('cat');
+    catField.value = cat;
+}
+
+function settag(tag){
+    var tagField = document.getElementById('tag');
+    tagField.value += tag + ",";
+}
+
+</script>
+
+<div id="catdiv" style="display:none;line-height:1.7em;color:#999">
+<h4>请选择以下已有分类</h4>
+<?py for cat in cats: ?>
+    <a href="#" onclick="setcat('#{cat[0]}');return false;">#{cat[0]}</a>,
+<?py #endfor ?>
+</div>
+
+<div id="tagdiv" style="display:none;line-height:1.7em;color:#999">
+<h4>请选择以下已有标签</h4>
+<?py for tag in tags: ?>
+    <a href="#" onclick="settag('#{tag}');return false;">#{tag}</a>,
+<?py #endfor ?>
+</div>
+
+<!-- ajaxfileupload -->
+<script type="text/javascript" src="/static/jquery-plugin/jquery.upload-1.0.2.min.js"></script>
+<script type="text/javascript">
+$('#filetoupload').change(function() {
+    if($(this).val()){
+        $(this).upload('/admin/fileupload', function(res) {
+            if(res.status == 200){
+                var el = document.getElementById('html');
+
+                var filetype = res.msg.split(".");
+                var tp ="jpg,gif,bmp,png";
+                var rs=tp.indexOf(filetype[filetype.length-1]);
+                if(rs>=0){
+                    el.value += '\n图片：' + res.filename + '\n<img src="' + res.msg + '" alt="' + res.filename + '" /> \n';
+                }else{
+                    el.value += '\n附件：' + res.filename + ' <a href="' + res.msg + '" target="_blank">点击下载</a> \n';
+                }
+
+                el.focus();
+                document.getElementsByName("fileupload")[0].value="";
+            }else{
+                $(this).val("");
+                alert(res.msg);
+            }
+        }, 'json');
+    }
+});
+</script>
+<!-- /ajaxfileupload -->

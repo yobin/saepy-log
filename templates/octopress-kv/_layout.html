@@ -19,14 +19,14 @@
   
   <link rel='index' title='#{getAttr('SITE_TITLE')}' href='#{{getAttr('SITE_TITLE')}}/' />
 <?py if 'postdetail' in _context and postdetail: ?>
-  <link rel='start' title='${obj.title}' href='#{obj.absolute_url}' /> 
-<?py     if obj.prev_obj: ?>
-  <link rel='prev' title='${obj.prev_obj.title}' href='#{{BASE_URL}}/topic/#{obj.prev_obj.id}/#{obj.prev_obj.slug}' /> 
+  <link rel='start' title='${obj['title']}' href='#{obj['absolute_url']}' /> 
+<?py     if obj['prev_obj']: ?>
+  <link rel='prev' title='${obj['prev_obj']['title']}' href='#{{BASE_URL}}/topic/#{obj['prev_obj']['id']}/#{obj['prev_obj']['slug']}' /> 
 <?py     #endif ?>
-<?py     if obj.next_obj: ?>
-  <link rel='next' title='${obj.next_obj.title}' href='#{{BASE_URL}}/topic/#{obj.next_obj.id}/#{obj.next_obj.slug}' /> 
+<?py     if obj['next_obj']: ?>
+  <link rel='next' title='${obj['next_obj']['title']}' href='#{{BASE_URL}}/topic/#{obj['next_obj']['id']}/#{obj['next_obj']['slug']}' /> 
 <?py     #endif ?>
-  <link rel='shortlink' href='#{{BASE_URL}}/t/#{obj.id}' />
+  <link rel='shortlink' href='#{{BASE_URL}}/t/#{obj['id']}' />
 <?py #endif ?>
 <?py if 'keywords' in _context and 'description' in _context: ?>
   <meta name="description" content="${description}" />
@@ -81,8 +81,9 @@
       </fieldset>
     </form>
     <ul role=main-navigation>
-      <li><a href="/">Blog</a></li>
-      <li><a href="archive/">Archives</a></li>
+      <li><a href="#{{BASE_URL}}">Blog</a></li>
+      <li><a href="#{{BASE_URL}}/archive/">Archives</a></li>
+
     </ul>
   </nav>
   <div id="main">
@@ -111,7 +112,7 @@
   </footer>
 
 <?py if 'postdetail' in _context and postdetail: ?>
-<?py     if obj.highlight: ?>
+<?py     if obj['highlight']: ?>
 <link rel="stylesheet" title="Sunburst" href="/static/highlight/sunburst.min.css">
 <script src="/static/highlight/highlight.min.js"></script>
 <script>

@@ -1,0 +1,76 @@
+<?py
+from setting import *
+?>
+
+<aside role=sidebar>
+
+<?py if listtype == 'archive': ?>
+<section>
+    <h1>Archives</h1>
+    <p id="Archive_list">
+    <?py for archive in archives: ?>
+   	  <li class="category">
+        	<a title="View all posts filed under #{archive[0]}" href="#{{BASE_URL}}/archive/#{archive[0]}/">#{archive[0]} <span class="tag_meta">(#{archive[1]})</span></a>
+      </li>
+    <?py #endfor ?>
+    </p>
+</section>
+
+<?py else: ?>
+
+<section>
+    <h1>Recent Comments</h1>
+    <ul id="recent_posts">
+    <?py for each in comments: ?>
+        <li class="post">
+            #{each['author']} Says: <span class="grey">${each['add_time']}</span> <br/> <a href="#{{BASE_URL}}/t/#{each['postid']}#r#{each['id']}">#{each['short_content']} </a>
+        </li>
+    <?py #endfor ?>
+    </ul>
+</section>
+
+
+
+<section>
+    <h1>Category</h1>
+    <ul id="Category_list">
+    <?py for cat in cats: ?>
+        <li class="category">
+            <a title="View all posts filed under #{cat[0]}" href="#{{BASE_URL}}/category/#{cat[0]}/">#{cat[0]} <span class="tag_meta">(#{cat[1]})</span></a>
+        </li>
+    <?py #endfor ?>
+    </ul>
+</section>
+
+<section>
+    <h1>Tags</h1>
+    <p id="top_tags">
+    <?py for tagi in tags: ?>
+        <a title="#{tagi[0]}" href="#{{BASE_URL}}/tag/#{tagi[0]}/">#{tagi[0]}</a> <span class="tag_meta">(#{tagi[1]})</span>
+    <?py #endfor ?>
+    </p>
+</section>
+
+    <?py if LINK_BROLL_SUPPORT == True: ?>
+        <section>
+        <h1>Link Broll</h1>
+        <ul id="Category_list">
+        <?py for link in LINK_BROLL: ?>
+            <li class="category"><a href="#{link['url']}" target="_blank">#{link['text']}</a></li>
+        <?py #endfor ?>
+        <?py for link in links: ?>
+            <li class="category"><a href="#{link['url']}" target="_blank">#{link['name']}</a></li>
+        <?py #endfor ?>
+        </ul>
+        </section>
+    <?py #endif ?>
+<?py #endif ?>
+
+<section>
+    <h1>Total blog</h1>
+    <p id="Total_blog">
+        #{Totalblog}
+    </p>
+</section>
+
+</aside>

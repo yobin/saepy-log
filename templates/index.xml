@@ -11,16 +11,29 @@
   </author>
 
 <?py for topic in posts: ?>
-  <entry>
-    <title>${ topic.title}</title>
-    <id>#{topic.absolute_url}</id>
-	<link rel="alternate" type="text/html" href="#{topic.absolute_url}" />
-    <published>#{datetime.fromtimestamp(topic.add_time).strftime("%Y-%m-%dT%H:%M:%SZ")}</published>
-    <updated>#{datetime.fromtimestamp(topic.edit_time).strftime("%Y-%m-%dT%H:%M:%SZ")}</updated>
-    <content type="html">
-      ${tran_content(topic.content)}
-    </content>
-  </entry>
+    <?py if MYSQL_TO_KVDB_SUPPORT: ?>
+      <entry>
+        <title>${ topic['title']}</title>
+        <id>#{topic['absolute_url']}</id>
+        <link rel="alternate" type="text/html" href="#{topic['absolute_url']}" />
+        <published>#{datetime.fromtimestamp(int(topic['add_time'])).strftime("%Y-%m-%dT%H:%M:%SZ")}</published>
+        <updated>#{datetime.fromtimestamp(int(topic['edit_time'])).strftime("%Y-%m-%dT%H:%M:%SZ")}</updated>
+        <content type="html">
+          ${tran_content(topic['content'])}
+        </content>
+      </entry>
+    <?py else: ?>
+        <entry>
+          <title>${ topic.title}</title>
+          <id>#{topic.absolute_url}</id>
+          <link rel="alternate" type="text/html" href="#{topic.absolute_url}" />
+          <published>#{datetime.fromtimestamp(topic.add_time).strftime("%Y-%m-%dT%H:%M:%SZ")}</published>
+          <updated>#{datetime.fromtimestamp(topic.edit_time).strftime("%Y-%m-%dT%H:%M:%SZ")}</updated>
+          <content type="html">
+            ${tran_content(topic.content)}
+          </content>
+        </entry>
+    <?py #endif ?>
 <?py #endfor ?>
 
 </feed>
