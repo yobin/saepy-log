@@ -290,6 +290,11 @@ class PostDetail(BaseHandler):
             pobjid        = pobj.id
             pobjtitle     = pobj.title
 
+        try:
+            pclosecomment = int(pclosecomment)
+        except Exception , e:
+            print 'PostDetail, pclosecomment=',pclosecomment,e
+
         if pobj and not pclosecomment:
             cobjid = Comment.add_new_comment(post_dic)
             if cobjid:
@@ -297,10 +302,10 @@ class PostDetail(BaseHandler):
                 rspd['status'] = 200
                 #rspd['msg'] = '恭喜： 已成功提交评论'
 
-		if GRAVATAR_SUPPORT:
-			gravatar = 'http://www.gravatar.com/avatar/%s'%md5(post_dic['email']).hexdigest()
-		else:
-			gravatar = ''
+                if GRAVATAR_SUPPORT:
+                    gravatar = 'http://www.gravatar.com/avatar/%s'%md5(post_dic['email']).hexdigest()
+                else:
+                    gravatar = ''
                 rspd['msg'] = self.render('comment.html', {
                         'cobjid': cobjid,
                         'gravatar': gravatar,
@@ -333,12 +338,15 @@ class PostDetail(BaseHandler):
                         if tolist:
                             import sae.mail
                             sae.mail.send_mail(','.join(tolist), m_subject, m_html,(getAttr('MAIL_SMTP'), int(getAttr('MAIL_PORT')), getAttr('MAIL_FROM'), getAttr('MAIL_PASSWORD'), True))
-                    except:
-                        pass
+                    except Exception , e:
+                        print 'PostDetail()',e
+                        rspd['msg'] = '错误： 未知错误'
+                #else:
+                #    rspd['msg'] = '错误： 未知错误'
             else:
                 rspd['msg'] = '错误： 未知错误'
         else:
-            rspd['msg'] = '错误： 未知错误'
+            rspd['msg'] = '不允许评论'
         self.write(json.dumps(rspd))
 
 class CategoryDetailShort(BaseHandler):
@@ -683,7 +691,8 @@ class WxParser(BaseHandler):
         posts = Article.get_articles_by_latest()
         articles_msg = {'articles':[]}
         for post in posts:
-            slug        = slugfy(post['title'])
+            #slug        = slugfy(post['title'])#yobin 20160718
+            slug        = post['title']
             desc        = HTML_REG.sub('',post['content'][:DESCRIPTION_CUT_WORDS])
             shorten_url = '%s/t/%s' % (BASE_URL, post['id'])
 

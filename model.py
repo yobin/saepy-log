@@ -70,7 +70,8 @@ def post_list_format(posts):
 
 def post_detail_formate_kv(obj):
     if obj:
-        slug = slugfy(obj['title'])
+        #slug = slugfy(obj['title'])#yobin 20160718
+        slug = obj['title']
         obj['slug'] = slug
         obj['absolute_url'] = '%s/topic/%s/%s' % (BASE_URL, str(obj['id']), slug)
         obj['shorten_url'] = '%s/t/%s' % (BASE_URL, str(obj['id']))
