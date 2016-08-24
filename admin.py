@@ -1012,7 +1012,7 @@ class SetLink(BaseHandler):
 
 #yobin add kvdb panel 20160824 begin
 class kvpanel_index(BaseHandler):
-	@authorized()
+    @authorized()
     def get(self):
         kv = sae.kvdb.KVClient()
         path = self.request.path
@@ -1034,7 +1034,7 @@ class kvpanel_index(BaseHandler):
         return self.echo('kvdbpannel.html',mdict)
 
 class kvpanel_set(BaseHandler):
-	@authorized()
+    @authorized()
     def post(self):
         key = self.get_argument('key','')
         val = self.get_argument('val','')
@@ -1044,7 +1044,7 @@ class kvpanel_set(BaseHandler):
         return self.redirect('/kvdbpanel/kv/')
 
 class kvpanel_del(BaseHandler):
-	@authorized()
+    @authorized()
     def post(self):
         key = self.get_argument('key','')
         if key:
@@ -1053,7 +1053,7 @@ class kvpanel_del(BaseHandler):
         return self.redirect('/kvdbpanel/kv/')
 
 class kvpanel_get(BaseHandler):
-	@authorized()
+    @authorized()
     def get(self):
         key = self.get_argument('key','')
         ans = ''
