@@ -326,24 +326,23 @@ class PostDetail(BaseHandler):
                             tolist = [getAttr('NOTICE_MAIL')]
                         else:
                             tolist = []
-                        if post_dic['toid']:
-                            tcomment = Comment.get_comment_by_id(toid)
-                            if MYSQL_TO_KVDB_SUPPORT:
-                                if tcomment and tcomment['email']:
-                                    tolist.append(tcomment['email'])
-                            else:
-                                if tcomment and tcomment.email:
-                                    tolist.append(tcomment.email)
-                        commenturl = "%s/t/%s#r%s" % (BASE_URL, str(pobjid), str(cobjid))
-                        m_subject = u'有人回复您在 《%s》 里的评论 %s' % ( pobjtitle,str(cobjid))
-                        m_html = u'这是一封提醒邮件（请勿直接回复）： %s ，请尽快处理： %s' % (m_subject, commenturl)
-
                         if tolist:
                             import sae.mail
+                            if 'toid' in post_dic:
+                                tcomment = Comment.get_comment_by_id(toid)
+                                if MYSQL_TO_KVDB_SUPPORT:
+                                    if tcomment and tcomment['email']:
+                                        tolist.append(tcomment['email'])
+                                else:
+                                    if tcomment and tcomment.email:
+                                        tolist.append(tcomment.email)
+                            commenturl = "%s/t/%s#r%s" % (BASE_URL, str(pobjid), str(cobjid))
+                            m_subject = u'有人回复您在 《%s》 里的评论 %s' % ( pobjtitle,str(cobjid))
+                            m_html = u'这是一封提醒邮件（请勿直接回复）： %s ，请尽快处理： %s' % (m_subject, commenturl)
                             sae.mail.send_mail(','.join(tolist), m_subject, m_html,(getAttr('MAIL_SMTP'), int(getAttr('MAIL_PORT')), getAttr('MAIL_FROM'), getAttr('MAIL_PASSWORD'), True))
                     except Exception , e:
                         print 'PostDetail()',e
-                        rspd['msg'] = '错误： 未知错误'
+                        #rspd['msg'] = '错误： 未知错误'
                 #else:
                 #    rspd['msg'] = '错误： 未知错误'
             else:
