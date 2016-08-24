@@ -552,9 +552,9 @@ class Comment():
                 k = 'kv_comms'
                 v = getkv(k)
                 if v:
-                    clist = v.split(',')
-                    clist.remove(id)
                     try:
+                        clist = v.split(',')
+                        clist.remove(id)
                         clist.remove('')
                     except:
                         pass
@@ -567,8 +567,8 @@ class Comment():
                     if v:
                         pcdict = decode_dict(v)
                         idlist = pcdict[postid].split(',')
-                        idlist.remove(id)
                         try:
+                            idlist.remove(id)
                             idlist.remove('')
                         except:
                             pass
@@ -698,12 +698,13 @@ class Comment():
             v = getkv(k)
             if v:
                 pcdict = decode_dict(v)
-                if pcdict.has_key(params['postid']):
-                    pcdict['postid'] = '%s,%s' % (str(newid))
+                postid = str(params['postid'])
+                if pcdict.has_key(postid):
+                    pcdict[postid] = '%s,%s' % (pcdict[postid],str(newid))
                 else:
-                    pcdict['postid'] = '%s' % (str(newid))
+                    pcdict[postid] = '%s' % (str(newid))
             else:
-                pcdict['postid'] = '%s' % (str(newid))
+                pcdict[postid] = '%s' % (str(newid))
             setkv(k,encode_dict(pcdict))
             return str(newid)
         else:
