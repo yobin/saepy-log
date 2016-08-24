@@ -155,8 +155,11 @@ class PostDetail(BaseHandler):
             obj_coms = obj.coms
 
         if title != obj_slug:
-            self.redirect(obj_absolute_url, 301)
-            return
+            #self.redirect(obj_absolute_url, 301)
+            #return
+            print title
+            print obj_slug
+
         #
         if obj_password and THEME == 'default':
             rp = self.get_cookie("rp%s" % id, '')
