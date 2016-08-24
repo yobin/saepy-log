@@ -1010,6 +1010,58 @@ class SetLink(BaseHandler):
                 return self.write('1')
         return self.write('Fail')
 
+#yobin add kvdb panel 20160824 begin
+class kvpanel_index(BaseHandler):
+	@authorized()
+    def get(self):
+        kv = sae.kvdb.KVClient()
+        path = self.request.path
+        prefix = self.get_argument('prefix','')
+        limit = self.get_argument('limit',20)
+        prev_marker = self.get_argument('prev_marker','')
+        marker = str(self.get_argument('marker',''))
+
+        results = list(kv.get_by_prefix(str(prefix),limit=int(limit),marker=marker))
+        if results and len(results):
+            marker  = results[-1][0]
+
+        mdict = {'results':results,
+            'prefix':prefix,
+            'prev_marker':prev_marker,
+            'marker':marker,
+            'path':path,
+            'limit':limit}
+        return self.echo('kvdbpannel.html',mdict)
+
+class kvpanel_set(BaseHandler):
+	@authorized()
+    def post(self):
+        key = self.get_argument('key','')
+        val = self.get_argument('val','')
+        if key and val:
+            kv = sae.kvdb.KVClient()
+            kv.set(str(key),encode_special_txt(str(val)))
+        return self.redirect('/kvdbpanel/kv/')
+
+class kvpanel_del(BaseHandler):
+	@authorized()
+    def post(self):
+        key = self.get_argument('key','')
+        if key:
+            kv = sae.kvdb.KVClient()
+            kv.delete(str(key))
+        return self.redirect('/kvdbpanel/kv/')
+
+class kvpanel_get(BaseHandler):
+	@authorized()
+    def get(self):
+        key = self.get_argument('key','')
+        ans = ''
+        if key:
+            kv = sae.kvdb.KVClient()
+            ans = decode_special_txt(str(kv.get(str(key))))
+        return self.redirect('/kvdbpanel/kv/')
+#yobin add kvdb panel 20160824 end
 #####
 if MYSQL_TO_KVDB_SUPPORT:
     urls = [
@@ -1030,6 +1082,15 @@ if MYSQL_TO_KVDB_SUPPORT:
     ]
 else:
     urls = []
+
+#yobin add kvdb panel 20160824 begin
+urls += [
+	(r'/kvdbpanel/kv/', kvpanel_index),
+	(r'/kvdbpanel/kv/set/', kvpanel_set),
+	(r'/kvdbpanel/kv/del/', kvpanel_del),
+	(r'/kvdbpanel/kv/get/', kvpanel_get),
+]
+#yobin add kvdb panel 20160824 end
 
 urls += [
     (r"/admin/", HomePage),
