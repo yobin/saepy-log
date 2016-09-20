@@ -695,7 +695,7 @@ class WxParser(BaseHandler):
         for post in posts:
             #slug        = slugfy(post['title'])#yobin 20160718
             slug        = post['title']
-            desc        = HTML_REG.sub('',post['content'][:DESCRIPTION_CUT_WORDS])
+            desc        = HTML_REG.sub('',post['content'].decode('utf-8')[:DESCRIPTION_CUT_WORDS].encode('utf-8'))
             shorten_url = '%s/t/%s' % (BASE_URL, post['id'])
 
             article = {
@@ -767,9 +767,9 @@ class WxParser(BaseHandler):
             for obj in article_list:
                 slug        = slugfy(obj['title'])
                 if MYSQL_TO_KVDB_SUPPORT:
-                    desc        = HTML_REG.sub('',obj['content'][:DESCRIPTION_CUT_WORDS])
+                    desc        = HTML_REG.sub('',obj['content'].decode('utf-8')[:DESCRIPTION_CUT_WORDS].encode('utf-8'))
                 else:
-                    desc        = HTML_REG.sub('',obj.content[:DESCRIPTION_CUT_WORDS])
+                    desc        = HTML_REG.sub('',obj.content.decode('utf-8')[:DESCRIPTION_CUT_WORDS].encode('utf-8'))
                 shorten_url = '%s/t/%s' % (BASE_URL, obj['id'])
                 article = {
                         'title': slug,

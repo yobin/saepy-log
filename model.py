@@ -55,7 +55,7 @@ def post_list_format(posts):
                 if '<!--more-->' in obj['content']:
                     obj['shorten_content'] = obj['content'].split('<!--more-->')[0]
                 else:
-                    obj['shorten_content'] = HTML_REG.sub('',obj['content'][:SHORTEN_CONTENT_WORDS])
+                    obj['shorten_content'] = HTML_REG.sub('',obj['content'].decode('utf-8')[:SHORTEN_CONTENT_WORDS].encode('utf-8'))
                 obj['add_time_fn'] = time_from_now(int(obj['add_time']))
     else:
         for obj in posts:
@@ -64,7 +64,7 @@ def post_list_format(posts):
             if '<!--more-->' in obj.content:
                 obj.shorten_content = obj.content.split('<!--more-->')[0]
             else:
-                obj.shorten_content = HTML_REG.sub('',obj.content[:SHORTEN_CONTENT_WORDS])
+                obj.shorten_content = HTML_REG.sub('',obj.content.decode('utf-8')[:SHORTEN_CONTENT_WORDS].encode('utf-8'))
             obj.add_time_fn = time_from_now(int(obj.add_time))
     return posts
 
@@ -90,7 +90,7 @@ def post_detail_formate_kv(obj):
         obj['add_time_fn'] = time_from_now(int(obj['add_time']))
         obj['last_modified'] = timestamp_to_datetime(int(obj['edit_time']))
         obj['keywords'] = obj['tags']
-        obj['description'] = HTML_REG.sub('',obj['content'][:DESCRIPTION_CUT_WORDS])
+        obj['description'] = HTML_REG.sub('',obj['content'].decode('utf-8')[:DESCRIPTION_CUT_WORDS].encode('utf-8'))
 
         #get prev and next obj
         obj['prev_obj'] = Article.get_prev_article(str(obj['id']))
@@ -155,7 +155,7 @@ def post_detail_formate(obj):
         obj.add_time_fn = time_from_now(int(obj.add_time))
         obj.last_modified = timestamp_to_datetime(obj.edit_time)
         obj.keywords = obj.tags
-        obj.description = HTML_REG.sub('',obj.content[:DESCRIPTION_CUT_WORDS])
+        obj.description = HTML_REG.sub('',obj.content.decode('utf-8')[:DESCRIPTION_CUT_WORDS].encode('utf-8'))
         #get prev and next obj
         obj.prev_obj = sdb.get('SELECT `id`,`title` FROM `sp_posts` WHERE `id` > %s LIMIT 1' % str(obj.id))
         if obj.prev_obj:
@@ -207,7 +207,7 @@ def comment_format(objs):
                 obj['gravatar'] = ''
                 obj['add_time'] = time_from_now(int(obj['add_time']))
                 if int(obj['visible']):
-                    obj['short_content'] = HTML_REG.sub('',obj['content'][:RECENT_COMMENT_CUT_WORDS])
+                    obj['short_content'] = HTML_REG.sub('',obj['content'].decode('utf-8')[:RECENT_COMMENT_CUT_WORDS].encode('utf-8'))
                 else:
                     obj['short_content'] = 'Your comment is awaiting moderation.'[:RECENT_COMMENT_CUT_WORDS]
                 obj['content'] = obj['content'].replace('\n','<br/>')
@@ -220,7 +220,7 @@ def comment_format(objs):
                 obj.add_time = time_from_now(int(obj.add_time))
 
                 if obj.visible:
-                    obj.short_content = HTML_REG.sub('',obj.content[:RECENT_COMMENT_CUT_WORDS])
+                    obj.short_content = HTML_REG.sub('',obj.content.decode('utf-8')[:RECENT_COMMENT_CUT_WORDS].encode('utf-8'))
                 else:
                     obj.short_content = 'Your comment is awaiting moderation.'[:RECENT_COMMENT_CUT_WORDS]
 
