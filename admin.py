@@ -238,7 +238,8 @@ class AddPost(BaseHandler):
 
             rspd['status'] = 200
             rspd['msg'] = '完成： 你已经成功添加了一篇文章 <a href="/t/%s" target="_blank">查看</a>' % str(postid)
-            clear_cache_by_pathlist(['/', 'cat:%s' % quoted_string(post_dic['category'])])
+            #clear_cache_by_pathlist(['/', 'cat:%s' % quoted_string(post_dic['category']), 'post_list_index',])
+            clear_all_cache()#yobin 20160921
 
             if not debug:
                 add_task('default', '/task/pingrpctask')
