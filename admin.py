@@ -428,6 +428,12 @@ class EditComment(BaseHandler):
         }
         post_dic['visible'] = tf[post_dic['visible'].lower()]
 
+        if MYSQL_TO_KVDB_SUPPORT:
+            obj = Comment.get_comment_by_id(id)
+            for k,v in obj.items():
+                if k not in post_dic:
+                    post_dic[k] = v
+
         Comment.update_comment_edit(post_dic)
         clear_cache_by_pathlist(['post:%s'%id])
         self.redirect('%s/admin/comment/%s'% (BASE_URL, id))
