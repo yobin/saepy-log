@@ -250,7 +250,7 @@ class PostDetail(BaseHandler):
                     limit = EACH_PAGE_COMMENT_NUM
                 else:
                     limit = allnum - showednum
-                cobjs = Comment.get_post_page_comments_by_id( id, fromid, limit )
+                cobjs = Comment.get_post_page_comments_by_id( id, int(fromid), limit )
                 rspd['commentstr'] = self.render('comments.html', {'cobjs': cobjs})
                 rspd['lavenum'] = allnum - showednum - limit
                 self.write(json.dumps(rspd))
@@ -329,7 +329,7 @@ class PostDetail(BaseHandler):
                         if tolist:
                             import sae.mail
                             if 'toid' in post_dic:
-                                tcomment = Comment.get_comment_by_id(toid)
+                                tcomment = Comment.get_comment_by_id(post_dic['toid'])
                                 if MYSQL_TO_KVDB_SUPPORT:
                                     if tcomment and tcomment['email']:
                                         tolist.append(tcomment['email'])
@@ -341,7 +341,7 @@ class PostDetail(BaseHandler):
                             m_html = u'这是一封提醒邮件（请勿直接回复）： %s ，请尽快处理： %s' % (m_subject, commenturl)
                             sae.mail.send_mail(','.join(tolist), m_subject, m_html,(getAttr('MAIL_SMTP'), int(getAttr('MAIL_PORT')), getAttr('MAIL_FROM'), getAttr('MAIL_PASSWORD'), True))
                     except Exception , e:
-                        print 'PostDetail()',e
+                        print 'PostDetail()222',e
                         #rspd['msg'] = '错误： 未知错误'
                 #else:
                 #    rspd['msg'] = '错误： 未知错误'
