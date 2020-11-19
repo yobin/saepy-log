@@ -398,9 +398,9 @@ class EditComment(BaseHandler):
                 if act == 'del':
                     Comment.del_comment_by_id(id)
                     if MYSQL_TO_KVDB_SUPPORT:
-                        clear_cache_by_pathlist(['post:%d'%obj['postid']])
+                        clear_cache_by_pathlist(['post:%d' % int(obj['postid'])])
                     else:
-                        clear_cache_by_pathlist(['post:%d'%obj.postid])
+                        clear_cache_by_pathlist(['post:%d' % int(obj.postid)])
                     self.redirect('%s/admin/comment/'% (BASE_URL))
                     return
         self.echo('admin_comment.html', {
